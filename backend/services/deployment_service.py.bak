@@ -1,0 +1,199 @@
+import subprocess
+import time
+import json
+from typing import Dict, Optional
+from datetime import datetime
+
+class DeploymentService:
+    def __init__(self):
+        self.deployment_history = []
+        
+    def find_available_port(self, start_port=8000, end_port=9000):
+        """Find an available port in the specified range"""
+        for port in range(start_port, end_port):
+            try:
+                result = subprocess.run(
+                    ['docker', 'ps', '--format', '{{.Ports}}'],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                if f':{port}->' not in result.stdout:
+                    return port
+            except Exception as e:
+                print(f"Error checking port {port}: {e}")
+        return None
+        
+    def deploy_docker_image(self, image_name: str, container_name: str, 
+                           port: Optional[int] = None, user_id: str = "student",
+                           user_name: str = "Student", env_vars: dict = None) -> Dict:
+        """Deploy a Docker image from Docker Hub"""
+        try:
+            # Find available port if not specified
+            if not port:
+                port = self.find_available_port()
+                if not port:
+                    return {'success': False, 'message': 'No available ports'}
+            
+            # Check if container name already exists
+            check_cmd = ['docker', 'ps', '-a', '--filter', f'name={container_name}', '--format', '{{.Names}}']
+            result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=5)
+            if container_name in result.stdout:
+                return {'success': False, 'message': f'Container name "{container_name}" already exists'}
+            
+            # Pull the image first
+            print(f"📥 Pulling image: {image_name}")
+            pull_cmd = ['docker', 'pull', image_name]
+            pull_result = subprocess.run(pull_cmd, capture_output=True, text=True, timeout=300)
+            
+            if pull_result.returncode != 0:
+                return {
+                    'success': False,
+                    'message': f'Failed to pull image: {pull_result.stderr}'
+                }
+            
+            # Prepare docker run command
+            run_cmd = [
+                'docker', 'run', '-d',
+                '--name', container_name,
+                '--label', 'deployed_by=student',
+                '--label', f'user_id={user_id}',
+                '--label', f'user_name={user_name}',
+                '--label', f'deployed_at={datetime.now().isoformat()}',
+                '--label', 'deployment_method=ui',
+                '--restart', 'unless-stopped',
+                '-p', f'{port}:80',  # Map to port 80 inside container
+            ]
+            
+            # Add environment variables if provided
+            if env_vars:
+                for key, value in env_vars.items():
+                    run_cmd.extend(['-e', f'{key}={value}'])
+            
+            run_cmd.append(image_name)
+            
+            # Run the container
+            print(f"🚀 Starting container: {container_name}")
+            run_result = subprocess.run(run_cmd, capture_output=True, text=True, timeout=30)
+            
+            if run_result.returncode != 0:
+                return {
+                    'success': False,
+                    'message': f'Failed to start container: {run_result.stderr}'
+                }
+            
+            container_id = run_result.stdout.strip()
+            
+            # Add to deployment history
+            deployment = {
+                'id': int(time.time() * 1000),
+                'containerId': container_id[:12],
+                'containerName': container_name,
+                'image': image_name,
+                'port': port,
+                'userId': user_id,
+                'userName': user_name,
+                'status': 'running',
+                'timestamp': datetime.now().isoformat(),
+                'method': 'docker_hub'
+            }
+            self.deployment_history.insert(0, deployment)
+            
+            return {
+                'success': True,
+                'message': 'Container deployed successfully',
+                'data': {
+                    'containerId': container_id[:12],
+                    'containerName': container_name,
+                    'image': image_name,
+                    'port': port,
+                    'url': f'http://localhost:{port}'
+                }
+            }
+            
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+            
+    def deploy_from_github(self, repo_url: str, container_name: str,
+                          port: Optional[int] = None, user_id: str = "student",
+                          user_name: str = "Student", dockerfile_path: str = "Dockerfile") -> Dict:
+        """Deploy from GitHub repository (build from Dockerfile)"""
+        try:
+            # Find available port if not specified
+            if not port:
+                port = self.find_available_port()
+                if not port:
+                    return {'success': False, 'message': 'No available ports'}
+            
+            # Generate image name
+            image_name = f'student-app-{container_name}:latest'
+            
+            print(f"🔨 Building image from GitHub: {repo_url}")
+            
+            # Build image from GitHub
+            build_cmd = [
+                'docker', 'build',
+                '-t', image_name,
+                '-f', dockerfile_path,
+                repo_url
+            ]
+            
+            build_result = subprocess.run(build_cmd, capture_output=True, text=True, timeout=600)
+            
+            if build_result.returncode != 0:
+                return {
+                    'success': False,
+                    'message': f'Failed to build image: {build_result.stderr}'
+                }
+            
+            # Now deploy the built image
+            return self.deploy_docker_image(
+                image_name=image_name,
+                container_name=container_name,
+                port=port,
+                user_id=user_id,
+                user_name=user_name
+            )
+            
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+            
+    def stop_container(self, container_id: str) -> Dict:
+        """Stop a running container"""
+        try:
+            stop_cmd = ['docker', 'stop', container_id]
+            result = subprocess.run(stop_cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                return {'success': False, 'message': result.stderr}
+            
+            return {'success': True, 'message': 'Container stopped'}
+            
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+            
+    def remove_container(self, container_id: str, force: bool = False) -> Dict:
+        """Remove a container"""
+        try:
+            remove_cmd = ['docker', 'rm']
+            if force:
+                remove_cmd.append('-f')
+            remove_cmd.append(container_id)
+            
+            result = subprocess.run(remove_cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode != 0:
+                return {'success': False, 'message': result.stderr}
+            
+            return {'success': True, 'message': 'Container removed'}
+            
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+            
+    def get_deployment_history(self, limit: int = 50) -> list:
+        """Get deployment history"""
+        return self.deployment_history[:limit]
+
+
+# Create singleton instance
+deployment_service = DeploymentService()

@@ -1,0 +1,579 @@
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, Activity, Settings, Play, Zap, Server, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Info, StopCircle, RefreshCw } from 'lucide-react';
+import { metricsApi } from '../services/metricsApi';
+import { autoscalingApi } from '../services/autoscalingApi';
+
+const AutoScaling = () => {
+  const [autoScalerActive, setAutoScalerActive] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dockerStatus, setDockerStatus] = useState({ running: false });
+  
+  // Loading states for optimistic UI
+  const [isStarting, setIsStarting] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  
+  // Configuration state
+  const [config, setConfig] = useState({
+    cpuScaleUp: 70,
+    cpuScaleDown: 20,
+    memScaleUp: 75,
+    memScaleDown: 25,
+    minReplicas: 1,
+    maxReplicas: 5,
+    checkInterval: 30
+  });
+
+  // Real-time metrics state from API
+  const [metrics, setMetrics] = useState({
+    avgCpu: 0,
+    avgMemory: 0,
+    totalContainers: 0,
+    runningContainers: 0,
+    stoppedContainers: 0,
+    containers: []
+  });
+
+  // Scaling history state from backend
+  const [scalingEvents, setScalingEvents] = useState([]);
+
+  // Fetch Docker status and auto-scaler status on mount
+  useEffect(() => {
+    const checkDocker = async () => {
+      try {
+        const response = await metricsApi.getDockerStatus();
+        if (response.success) {
+          setDockerStatus(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to check Docker status:', error);
+      }
+    };
+
+    const checkAutoScalerStatus = async () => {
+      try {
+        const response = await autoscalingApi.getStatus();
+        if (response.success) {
+          setAutoScalerActive(response.data.running);
+          setConfig(response.data.config);
+          setScalingEvents(response.data.history || []);
+        }
+      } catch (error) {
+        console.error('Failed to check auto-scaler status:', error);
+      }
+    };
+
+    checkDocker();
+    checkAutoScalerStatus();
+  }, []);
+
+  // Fetch real metrics and auto-scaler status every 3 seconds
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch metrics
+        const metricsResponse = await metricsApi.getContainersMetrics();
+        if (metricsResponse.success) {
+          setMetrics(metricsResponse.data);
+          setLoading(false);
+        }
+
+        // Fetch auto-scaler status (includes history)
+        const statusResponse = await autoscalingApi.getStatus();
+        if (statusResponse.success) {
+          setAutoScalerActive(statusResponse.data.running);
+          setScalingEvents(statusResponse.data.history || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData(); // Initial fetch
+    const interval = setInterval(fetchData, 3000); // Every 3 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleStartAutoScaler = async () => {
+    setIsStarting(true);
+    setAutoScalerActive(true); // Optimistic update
+    
+    try {
+      const response = await autoscalingApi.start();
+      if (response.success) {
+        console.log('✅ Auto-scaler started');
+      } else {
+        setAutoScalerActive(false); // Revert
+        alert('❌ Failed to start: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error starting auto-scaler:', error);
+      setAutoScalerActive(false); // Revert
+      alert('❌ Failed to start auto-scaler');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const handleStopAutoScaler = async () => {
+    setIsStopping(true);
+    setAutoScalerActive(false); // Optimistic update
+    
+    try {
+      const response = await autoscalingApi.stop();
+      if (response.success) {
+        console.log('✅ Auto-scaler stopped');
+      } else {
+        setAutoScalerActive(true); // Revert
+        alert('❌ Failed to stop: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error stopping auto-scaler:', error);
+      setAutoScalerActive(true); // Revert
+      alert('❌ Failed to stop auto-scaler');
+    } finally {
+      setIsStopping(false);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    setIsSavingConfig(true);
+    
+    try {
+      const response = await autoscalingApi.updateConfig(config);
+      if (response.success) {
+        alert('✅ Configuration saved and applied!');
+      } else {
+        alert('❌ Failed to save: ' + response.message);
+      }
+    } catch (error) {
+      console.error('Error saving config:', error);
+      alert('❌ Failed to save configuration');
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  const getCpuColor = (value) => {
+    if (value >= 70) return '#ef4444';
+    if (value >= 50) return '#f59e0b';
+    return '#10b981';
+  };
+
+  const getMemoryColor = (value) => {
+    if (value >= 75) return '#ef4444';
+    if (value >= 50) return '#f59e0b';
+    return '#10b981';
+  };
+
+  return (
+    <div style={{ padding: '30px', minHeight: '100vh', background: '#f3f4f6' }}>
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+
+      {/* Educational Banner */}
+      <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '20px', borderRadius: '12px', marginBottom: '24px', color: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+        <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+          <Info size={24} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>📚 Real-Time Container Auto-Scaling</h3>
+            <p style={{ fontSize: '14px', lineHeight: '1.6', opacity: 0.95 }}>
+              Viewing <strong>LIVE metrics</strong> from deployed Docker containers. The auto-scaler monitors CPU & Memory usage and automatically scales containers up or down based on configured thresholds.
+              {!dockerStatus.running && <span style={{ color: '#fef3c7' }}> ⚠️ Docker is not connected.</span>}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Header */}
+      <div style={{ background: 'white', padding: '28px', borderRadius: '16px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
+            <TrendingUp size={36} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>Auto-Scaling</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: autoScalerActive ? '#dcfce7' : '#fee2e2', borderRadius: '20px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: autoScalerActive ? '#10b981' : '#ef4444', animation: autoScalerActive ? 'pulse 2s infinite' : 'none' }}></div>
+                <span style={{ fontSize: '14px', color: autoScalerActive ? '#065f46' : '#991b1b', fontWeight: '600' }}>
+                  {autoScalerActive ? 'Active & Monitoring' : 'Stopped'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', background: dockerStatus.running ? '#dcfce7' : '#fee2e2', borderRadius: '20px' }}>
+                <span style={{ fontSize: '14px', color: dockerStatus.running ? '#065f46' : '#991b1b', fontWeight: '600' }}>
+                  🐳 Docker: {dockerStatus.running ? 'Connected' : 'Disconnected'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', flexDirection: 'column', alignItems: 'flex-end' }}>
+          {!autoScalerActive ? (
+            <button
+              onClick={handleStartAutoScaler}
+              disabled={!dockerStatus.running || isStarting}
+              style={{ 
+                padding: '14px 28px', 
+                background: dockerStatus.running && !isStarting ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : '#9ca3af', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '10px', 
+                fontSize: '16px', 
+                fontWeight: 'bold', 
+                cursor: dockerStatus.running && !isStarting ? 'pointer' : 'not-allowed', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px', 
+                boxShadow: '0 4px 12px rgba(16,185,129,0.3)', 
+                transition: 'transform 0.2s',
+                opacity: dockerStatus.running && !isStarting ? 1 : 0.6
+              }}
+            >
+              {isStarting ? (
+                <>
+                  <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Play size={20} />
+                  Start Auto-Scaler
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={handleStopAutoScaler}
+              disabled={isStopping}
+              style={{ 
+                padding: '14px 28px', 
+                background: isStopping ? '#9ca3af' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '10px', 
+                fontSize: '16px', 
+                fontWeight: 'bold', 
+                cursor: isStopping ? 'not-allowed' : 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px', 
+                boxShadow: '0 4px 12px rgba(239,68,68,0.3)', 
+                transition: 'transform 0.2s',
+                opacity: isStopping ? 0.6 : 1
+              }}
+            >
+              {isStopping ? (
+                <>
+                  <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                  Stopping...
+                </>
+              ) : (
+                <>
+                  <StopCircle size={20} />
+                  Stop Auto-Scaler
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Real-Time Metrics Dashboard */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <Activity size={28} style={{ color: '#1f2937' }} />
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>Real-Time Metrics Dashboard</h2>
+          <span style={{ fontSize: '12px', padding: '4px 10px', background: '#dcfce7', color: '#065f46', borderRadius: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <RefreshCw size={14} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+            📊 Live Data
+          </span>
+        </div>
+        
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '16px' }}>
+            <RefreshCw size={48} style={{ animation: 'spin 1s linear infinite', color: '#6366f1', marginBottom: '16px' }} />
+            <p style={{ color: '#6b7280' }}>Loading metrics...</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            {/* CPU Usage Card */}
+            <div style={{ background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>AVG CPU Usage</h3>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                    <span style={{ fontSize: '42px', fontWeight: 'bold', color: getCpuColor(metrics.avgCpu) }}>{metrics.avgCpu.toFixed(1)}</span>
+                    <span style={{ fontSize: '24px', fontWeight: 'bold', color: getCpuColor(metrics.avgCpu) }}>%</span>
+                  </div>
+                </div>
+                <div style={{ padding: '16px', borderRadius: '12px', background: `${getCpuColor(metrics.avgCpu)}20` }}>
+                  <TrendingUp size={32} style={{ color: getCpuColor(metrics.avgCpu) }} />
+                </div>
+              </div>
+              <div style={{ width: '100%', height: '16px', background: '#e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(metrics.avgCpu, 100)}%`, height: '100%', background: getCpuColor(metrics.avgCpu), transition: 'width 0.5s ease' }}></div>
+              </div>
+              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                <span style={{ color: '#f59e0b' }}>↓ {config.cpuScaleDown}%</span>
+                <span style={{ color: '#ef4444' }}>↑ {config.cpuScaleUp}%</span>
+              </div>
+            </div>
+
+            {/* Memory Usage Card */}
+            <div style={{ background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>AVG Memory Usage</h3>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                    <span style={{ fontSize: '42px', fontWeight: 'bold', color: getMemoryColor(metrics.avgMemory) }}>{metrics.avgMemory.toFixed(1)}</span>
+                    <span style={{ fontSize: '24px', fontWeight: 'bold', color: getMemoryColor(metrics.avgMemory) }}>%</span>
+                  </div>
+                </div>
+                <div style={{ padding: '16px', borderRadius: '12px', background: `${getMemoryColor(metrics.avgMemory)}20` }}>
+                  <Activity size={32} style={{ color: getMemoryColor(metrics.avgMemory) }} />
+                </div>
+              </div>
+              <div style={{ width: '100%', height: '16px', background: '#e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(metrics.avgMemory, 100)}%`, height: '100%', background: getMemoryColor(metrics.avgMemory), transition: 'width 0.5s ease' }}></div>
+              </div>
+              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600' }}>
+                <span style={{ color: '#f59e0b' }}>↓ {config.memScaleDown}%</span>
+                <span style={{ color: '#ef4444' }}>↑ {config.memScaleUp}%</span>
+              </div>
+            </div>
+
+            {/* Active Replicas Card */}
+            <div style={{ background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Active Containers</h3>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                    <span style={{ fontSize: '42px', fontWeight: 'bold', color: '#3b82f6' }}>{metrics.runningContainers}</span>
+                    <span style={{ fontSize: '16px', fontWeight: '600', color: '#6b7280' }}>/ {metrics.totalContainers}</span>
+                  </div>
+                </div>
+                <div style={{ padding: '16px', borderRadius: '12px', background: '#3b82f620' }}>
+                  <Server size={32} style={{ color: '#3b82f6' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px', fontWeight: '600' }}>MIN</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f59e0b' }}>{config.minReplicas}</div>
+                </div>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '6px' }}>
+                  {Array.from({ length: Math.min(config.maxReplicas, 5) }).map((_, i) => (
+                    <Server key={i} size={24} style={{ color: i < metrics.runningContainers ? '#10b981' : '#e5e7eb' }} />
+                  ))}
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '6px', fontWeight: '600' }}>MAX</div>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ef4444' }}>{config.maxReplicas}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Scaling Activity Log */}
+      <div style={{ background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Activity size={24} style={{ color: '#6366f1' }} />
+          Scaling Activity Log
+          <span style={{ fontSize: '13px', padding: '4px 10px', background: '#e0e7ff', color: '#4f46e5', borderRadius: '12px', fontWeight: '600' }}>
+            {scalingEvents.length} events
+          </span>
+        </h3>
+        <div style={{ maxHeight: '350px', overflowY: 'auto', paddingRight: '8px' }}>
+          {scalingEvents.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px 24px', background: '#f9fafb', borderRadius: '12px' }}>
+              <Activity size={48} style={{ margin: '0 auto 16px', opacity: 0.3, color: '#9ca3af' }} />
+              <p style={{ fontSize: '16px', fontWeight: '600', color: '#6b7280' }}>No scaling events yet</p>
+              <p style={{ fontSize: '14px', marginTop: '8px', color: '#9ca3af' }}>Start the auto-scaler to see events</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {scalingEvents.map((event) => (
+                <div
+                  key={event.id}
+                  style={{
+                    padding: '18px',
+                    background: event.type === 'up' ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' : event.type === 'down' ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' : '#f3f4f6',
+                    borderRadius: '12px',
+                    borderLeft: `5px solid ${event.type === 'up' ? '#10b981' : event.type === 'down' ? '#f59e0b' : '#6b7280'}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ padding: '10px', borderRadius: '10px', background: event.type === 'up' ? '#dcfce7' : event.type === 'down' ? '#fef3c7' : '#e5e7eb' }}>
+                      {event.type === 'up' ? (
+                        <ArrowUp size={24} style={{ color: '#10b981' }} />
+                      ) : event.type === 'down' ? (
+                        <ArrowDown size={24} style={{ color: '#f59e0b' }} />
+                      ) : (
+                        <CheckCircle size={24} style={{ color: '#6b7280' }} />
+                      )}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1f2937', marginBottom: '4px' }}>
+                        {event.action}
+                        {event.from !== event.to && (
+                          <span style={{ marginLeft: '10px', padding: '4px 10px', background: 'white', color: '#6b7280', fontWeight: '600', borderRadius: '6px', fontSize: '13px' }}>
+                            {event.from} → {event.to} replicas
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                        {event.reason}
+                      </div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: '500', whiteSpace: 'nowrap' }}>{event.time}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Container Details */}
+      <div style={{ background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Server size={24} style={{ color: '#10b981' }} />
+          Running Containers ({metrics.runningContainers})
+        </h3>
+        {metrics.containers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '64px 24px', background: '#f9fafb', borderRadius: '12px' }}>
+            <Server size={48} style={{ margin: '0 auto 16px', opacity: 0.3, color: '#9ca3af' }} />
+            <p style={{ fontSize: '18px', fontWeight: '600', color: '#6b7280', marginBottom: '8px' }}>No Student Containers Found</p>
+            <p style={{ fontSize: '14px', color: '#9ca3af' }}>Deploy a container with label <code>deployed_by=student</code> to see it here</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '14px' }}>
+            {metrics.containers.map((container) => (
+              <div
+                key={container.id}
+                style={{
+                  padding: '20px',
+                  background: container.status === 'running' ? 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)' : '#fee2e2',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  border: `2px solid ${container.status === 'running' ? '#e5e7eb' : '#fca5a5'}`,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                  <div style={{ padding: '12px', borderRadius: '12px', background: container.status === 'running' ? '#dcfce7' : '#fee2e2' }}>
+                    <Server size={28} style={{ color: container.status === 'running' ? '#10b981' : '#ef4444' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '6px' }}>
+                      {container.name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                      Image: {container.image}
+                    </div>
+                    {container.metrics && container.metrics.running && (
+                      <div style={{ fontSize: '13px', color: '#6b7280', display: 'flex', gap: '16px', marginTop: '8px' }}>
+                        <span>💻 CPU: <strong style={{ color: getCpuColor(container.metrics.cpu) }}>{container.metrics.cpu}%</strong></span>
+                        <span>🧠 Memory: <strong style={{ color: getMemoryColor(container.metrics.memory) }}>{container.metrics.memory}%</strong></span>
+                        <span>📊 {container.metrics.memoryUsage}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <span style={{ 
+                  fontSize: '13px', 
+                  padding: '6px 16px', 
+                  background: container.status === 'running' ? 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)' : '#fef3c7', 
+                  color: container.status === 'running' ? '#047857' : '#92400e', 
+                  borderRadius: '8px', 
+                  fontWeight: 'bold',
+                  textTransform: 'capitalize'
+                }}>
+                  {container.status === 'running' ? '✓ Running' : container.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Configuration Section */}
+      <div style={{ background: 'white', padding: '24px', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>⚙️ Configuration</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+          {Object.entries({
+            'CPU Scale Up (%)': 'cpuScaleUp',
+            'CPU Scale Down (%)': 'cpuScaleDown',
+            'Memory Scale Up (%)': 'memScaleUp',
+            'Memory Scale Down (%)': 'memScaleDown',
+            'Min Replicas': 'minReplicas',
+            'Max Replicas': 'maxReplicas',
+            'Check Interval (s)': 'checkInterval'
+          }).map(([label, key]) => (
+            <div key={key}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>{label}</label>
+              <input 
+                type="number" 
+                value={config[key]} 
+                onChange={(e) => setConfig({ ...config, [key]: parseInt(e.target.value) || 0 })} 
+                style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px' }} 
+              />
+            </div>
+          ))}
+        </div>
+        <button 
+          onClick={handleSaveConfig} 
+          disabled={isSavingConfig}
+          style={{ 
+            marginTop: '20px', 
+            width: '100%', 
+            padding: '14px', 
+            background: isSavingConfig ? '#9ca3af' : '#6366f1', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '8px', 
+            fontSize: '16px', 
+            fontWeight: 'bold', 
+            cursor: isSavingConfig ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px'
+          }}
+        >
+          {isSavingConfig ? (
+            <>
+              <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
+              Saving...
+            </>
+          ) : (
+            <>
+              💾 Save Configuration
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default AutoScaling;

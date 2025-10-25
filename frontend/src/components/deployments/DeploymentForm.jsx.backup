@@ -1,0 +1,509 @@
+import { useState } from 'react';
+import { Container, GitBranch, Loader, CheckCircle, XCircle, Info, AlertCircle, ExternalLink } from 'lucide-react';
+import { deployDockerImage, deployGitHub } from '../../api/api';
+
+const DeploymentForm = ({ onNavigate }) => {
+  const [deploymentType, setDeploymentType] = useState('docker');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const [dockerForm, setDockerForm] = useState({
+    image_name: '',
+    container_name: '',
+    port: 8080,
+    username: '',
+    password: ''
+  });
+
+  const [githubForm, setGithubForm] = useState({
+    repo_url: '',
+    branch: 'main',
+    container_name: '',
+    port: 8080,
+    username: '',
+    access_token: ''
+  });
+
+  const handleDockerDeploy = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await deployDockerImage(dockerForm);
+      setResult(response.data);
+      setDockerForm({ ...dockerForm, username: '', password: '' });
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Deployment failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGitHubDeploy = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await deployGitHub(githubForm);
+      setResult(response.data);
+      setGithubForm({ ...githubForm, username: '', access_token: '' });
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Deployment failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      {/* Deployment Type Selector */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+        <button
+          onClick={() => setDeploymentType('docker')}
+          style={{
+            flex: 1,
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            border: deploymentType === 'docker' ? '2px solid #8b5cf6' : '2px solid #e5e7eb',
+            background: deploymentType === 'docker' ? '#f5f3ff' : 'white',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Container style={{ width: '2rem', height: '2rem', color: '#8b5cf6', margin: '0 auto 0.5rem' }} />
+          <div style={{ fontWeight: '600', color: '#4c1d95' }}>Docker Image</div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+            Deploy from Docker Hub
+          </div>
+        </button>
+
+        <button
+          onClick={() => setDeploymentType('github')}
+          style={{
+            flex: 1,
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            border: deploymentType === 'github' ? '2px solid #8b5cf6' : '2px solid #e5e7eb',
+            background: deploymentType === 'github' ? '#f5f3ff' : 'white',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <GitBranch style={{ width: '2rem', height: '2rem', color: '#8b5cf6', margin: '0 auto 0.5rem' }} />
+          <div style={{ fontWeight: '600', color: '#4c1d95' }}>GitHub Repository</div>
+          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+            Build from source code
+          </div>
+        </button>
+      </div>
+
+      {/* Docker Form with Prerequisites */}
+      {deploymentType === 'docker' && (
+        <div>
+          {/* Prerequisites Alert for Docker */}
+          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f5f3ff', borderRadius: '0.5rem', border: '1px solid #8b5cf6' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Info style={{ color: '#6b21a8', flexShrink: 0 }} size={20} />
+              <strong style={{ color: '#6b21a8' }}>Docker Hub Deployment Requirements</strong>
+            </div>
+            <ul style={{ fontSize: '0.875rem', color: '#581c87', marginLeft: '1.75rem', listStyle: 'disc' }}>
+              <li style={{ marginBottom: '0.25rem' }}>Valid Docker image name (e.g., <code style={{ background: '#ddd6fe', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>nginx:latest</code>)</li>
+              <li style={{ marginBottom: '0.25rem' }}>Port number that your application listens on</li>
+              <li>For private images: Docker Hub username and password/token</li>
+            </ul>
+            {onNavigate && (
+              <button 
+                onClick={() => onNavigate('docs')}
+                style={{ 
+                  fontSize: '0.875rem', 
+                  color: '#7c3aed', 
+                  marginTop: '0.75rem', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '0.25rem', 
+                  textDecoration: 'underline',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                View Full Documentation <ExternalLink size={14} />
+              </button>
+            )}
+          </div>
+
+          <form onSubmit={handleDockerDeploy} className="card">
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1.5rem' }}>
+              Deploy Docker Image
+            </h3>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                Docker Image Name *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="e.g., nginx:latest or username/app:v1.0"
+                value={dockerForm.image_name}
+                onChange={(e) => setDockerForm({ ...dockerForm, image_name: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem'
+                }}
+              />
+              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                📝 Use official images like nginx, redis, or your own username/imagename:tag
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                  Container Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Auto-generated"
+                  value={dockerForm.container_name}
+                  onChange={(e) => setDockerForm({ ...dockerForm, container_name: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                  Port *
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={dockerForm.port}
+                  onChange={(e) => setDockerForm({ ...dockerForm, port: parseInt(e.target.value) })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Private Image Credentials */}
+            <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+              <p style={{ fontSize: '0.875rem', color: '#92400e', marginBottom: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={16} />
+                Private Docker Image? (Optional)
+              </p>
+              <p style={{ fontSize: '0.75rem', color: '#92400e', marginBottom: '1rem' }}>
+                🔒 Credentials are used only during pull and never stored permanently.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#92400e', marginBottom: '0.5rem' }}>
+                    Docker Hub Username
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="dockerhub-username"
+                    value={dockerForm.username}
+                    onChange={(e) => setDockerForm({ ...dockerForm, username: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #fbbf24',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#92400e', marginBottom: '0.5rem' }}>
+                    Password / Access Token
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Password or token"
+                    value={dockerForm.password}
+                    onChange={(e) => setDockerForm({ ...dockerForm, password: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #fbbf24',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            >
+              {loading ? (
+                <>
+                  <Loader style={{ animation: 'spin 1s linear infinite' }} size={20} />
+                  Deploying...
+                </>
+              ) : (
+                <>
+                  <Container size={20} />
+                  Deploy Application
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* GitHub Form with Prerequisites */}
+      {deploymentType === 'github' && (
+        <div>
+          {/* Prerequisites Alert for GitHub */}
+          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#dbeafe', borderRadius: '0.5rem', border: '1px solid #3b82f6' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Info style={{ color: '#1e40af', flexShrink: 0 }} size={20} />
+              <strong style={{ color: '#1e40af' }}>Prerequisites for GitHub Deployment</strong>
+            </div>
+            <ul style={{ fontSize: '0.875rem', color: '#1e3a8a', marginLeft: '1.75rem', listStyle: 'disc' }}>
+              <li style={{ marginBottom: '0.25rem' }}>Repository must contain <code style={{ background: '#bfdbfe', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>Dockerfile</code> in root directory</li>
+              <li style={{ marginBottom: '0.25rem' }}>Dockerfile must include <code style={{ background: '#bfdbfe', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>EXPOSE</code> statement</li>
+              <li>Application must listen on <code style={{ background: '#bfdbfe', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>0.0.0.0</code></li>
+            </ul>
+            {onNavigate && (
+              <button 
+                onClick={() => onNavigate('docs')}
+                style={{ 
+                  fontSize: '0.875rem', 
+                  color: '#2563eb', 
+                  marginTop: '0.75rem', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '0.25rem', 
+                  textDecoration: 'underline',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                View Full Documentation <ExternalLink size={14} />
+              </button>
+            )}
+          </div>
+
+          <form onSubmit={handleGitHubDeploy} className="card">
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1.5rem' }}>
+              Deploy from GitHub
+            </h3>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                GitHub Repository URL *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="https://github.com/username/repository"
+                value={githubForm.repo_url}
+                onChange={(e) => setGithubForm({ ...githubForm, repo_url: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  fontSize: '1rem'
+                }}
+              />
+              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                📝 Must contain Dockerfile in root directory
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                  Branch *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={githubForm.branch}
+                  onChange={(e) => setGithubForm({ ...githubForm, branch: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                  Container Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Auto-generated"
+                  value={githubForm.container_name}
+                  onChange={(e) => setGithubForm({ ...githubForm, container_name: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>
+                  Port *
+                </label>
+                <input
+                  type="number"
+                  required
+                  value={githubForm.port}
+                  onChange={(e) => setGithubForm({ ...githubForm, port: parseInt(e.target.value) })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.5rem',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Private Repo Credentials */}
+            <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+              <p style={{ fontSize: '0.875rem', color: '#92400e', marginBottom: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={16} />
+                Private Repository? (Optional)
+              </p>
+              <p style={{ fontSize: '0.75rem', color: '#92400e', marginBottom: '1rem' }}>
+                🔒 Credentials are used only during deployment and never stored permanently.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#92400e', marginBottom: '0.5rem' }}>
+                    GitHub Username
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="github-username"
+                    value={githubForm.username}
+                    onChange={(e) => setGithubForm({ ...githubForm, username: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #fbbf24',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#92400e', marginBottom: '0.5rem' }}>
+                    Personal Access Token
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    value={githubForm.access_token}
+                    onChange={(e) => setGithubForm({ ...githubForm, access_token: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #fbbf24',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+            >
+              {loading ? (
+                <>
+                  <Loader style={{ animation: 'spin 1s linear infinite' }} size={20} />
+                  Building & Deploying...
+                </>
+              ) : (
+                <>
+                  <GitBranch size={20} />
+                  Build & Deploy
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Success/Error Messages */}
+      {result && (
+        <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#d1fae5', borderRadius: '0.5rem', border: '1px solid #10b981' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <CheckCircle style={{ color: '#065f46' }} size={20} />
+            <strong style={{ color: '#065f46' }}>Deployment Successful!</strong>
+          </div>
+          <p style={{ fontSize: '0.875rem', color: '#065f46' }}>
+            Container: <strong>{result.container_name}</strong><br/>
+            Access URL: <a href={result.access_url} target="_blank" rel="noopener noreferrer" style={{ color: '#059669', textDecoration: 'underline' }}>
+              {result.access_url}
+            </a>
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#fee2e2', borderRadius: '0.5rem', border: '1px solid #ef4444' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <XCircle style={{ color: '#991b1b' }} size={20} />
+            <strong style={{ color: '#991b1b' }}>Deployment Failed</strong>
+          </div>
+          <p style={{ fontSize: '0.875rem', color: '#991b1b', marginTop: '0.5rem' }}>
+            {error}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DeploymentForm;

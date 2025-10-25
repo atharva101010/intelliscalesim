@@ -1,0 +1,138 @@
+import { useEffect, useState } from 'react';
+import { Eye, Activity, Rocket, BookOpen, Gauge, BarChart, FileText } from 'lucide-react';
+import DashboardStats from '../components/dashboard/DashboardStats';
+import { getContainers } from '../api/api';
+
+const MonitorPage = ({ onNavigate }) => {
+  const [stats, setStats] = useState([
+    { label: 'My Deployments', value: '0' },
+    { label: 'Active Containers', value: '0' },
+    { label: 'Total Uptime', value: '0h' }
+  ]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const containers = await getContainers();
+        
+        setStats([
+          { label: 'My Deployments', value: containers.data.count || '0' },
+          { label: 'Active Containers', value: containers.data.count || '0' },
+          { label: 'Total Uptime', value: '24h' }
+        ]);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const learningCards = [
+    { 
+      icon: Rocket, 
+      label: 'Deploy Application', 
+      desc: 'Deploy from Docker Hub or GitHub', 
+      color: '#8b5cf6',
+      action: 'deploy'
+    },
+    { 
+      icon: FileText, 
+      label: 'My Assignments', 
+      desc: 'View and complete learning modules', 
+      color: '#f59e0b',
+      action: 'assignments'
+    },
+    { 
+      icon: Gauge, 
+      label: 'My Containers', 
+      desc: 'View and manage your deployments', 
+      color: '#3b82f6',
+      action: 'containers'
+    },
+    { 
+      icon: BarChart, 
+      label: 'Performance Analytics', 
+      desc: 'Track your application metrics', 
+      color: '#06b6d4',
+      action: 'analytics'
+    }
+  ];
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        <Eye style={{ width: '2.5rem', height: '2.5rem', color: '#3b82f6' }} />
+        <div>
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.25rem' }}>
+            Student Dashboard
+          </h1>
+          <p style={{ color: '#6b7280' }}>
+            Deploy and manage your applications with automated container orchestration.
+          </p>
+        </div>
+      </div>
+
+      <DashboardStats stats={stats} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+        {learningCards.map((card, idx) => (
+          <button
+            key={idx}
+            className="card"
+            onClick={() => card.action && onNavigate(card.action)}
+            style={{
+              cursor: 'pointer',
+              border: 'none',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
+            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem' }}>
+              <card.icon style={{ width: '4rem', height: '4rem', color: card.color, marginBottom: '1rem' }} />
+              <span style={{ fontSize: '1.125rem', fontWeight: '600', color: '#4c1d95', marginBottom: '0.5rem' }}>
+                {card.label}
+              </span>
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', textAlign: 'center' }}>
+                {card.desc}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+        <div className="card">
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <BookOpen style={{ width: '1.5rem', height: '1.5rem' }} />
+            Quick Start Guide
+          </h3>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+            1. Click "Deploy Application"
+          </p>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+            2. Choose Docker Image or GitHub Repository
+          </p>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            3. Fill in the details and deploy!
+          </p>
+        </div>
+        
+        <div className="card">
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Activity style={{ width: '1.5rem', height: '1.5rem' }} />
+            System Status
+          </h3>
+          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+            All systems operational. Ready to deploy your applications!
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MonitorPage;

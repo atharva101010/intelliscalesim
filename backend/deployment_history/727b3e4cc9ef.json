@@ -1,0 +1,9 @@
+{
+  "id": "727b3e4cc9ef",
+  "type": "docker_image",
+  "image_name": "mendhak/http-https-echo",
+  "container_name": "echo-server",
+  "port": 8080,
+  "status": "running",
+  "timestamp": "2025-10-16T12:18:52.720537"
+}

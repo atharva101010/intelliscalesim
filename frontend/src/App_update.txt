@@ -1,0 +1,10 @@
+Add this import at the top:
+import AutoScaling from './pages/AutoScaling';
+
+Add 'autoscaling' to the navigation array for students:
+{ id: 'autoscaling', label: 'Auto-scaling', icon: TrendingUp }
+
+Add this case in renderPage() for students:
+else if (activePage === 'autoscaling') {
+  return <AutoScaling />;
+}

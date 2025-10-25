@@ -1,0 +1,108 @@
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
+import bcrypt
+from jose import jwt
+from datetime import datetime, timedelta
+from models.database import get_db
+from models.user import User
+
+# Remove the /api/auth prefix - it's added in main.py
+router = APIRouter(tags=["authentication"])
+security = HTTPBearer()
+
+# JWT settings
+SECRET_KEY = "your-secret-key-change-this-in-production"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+    full_name: str
+    role: str = "student"
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    username: str
+    full_name: str | None
+    role: str
+    
+    class Config:
+        from_attributes = True
+
+@router.post("/login")
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    """Login endpoint"""
+    user = db.query(User).filter(User.email == request.email).first()
+    
+    if not user or not bcrypt.checkpw(request.password.encode("utf-8"), user.hashed_password.encode("utf-8")):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Create JWT token
+    token_data = {
+        "sub": user.email,
+        "user_id": user.id,
+        "role": user.role,
+        "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    }
+    token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(user)
+    }
+
+@router.post("/register", response_model=UserResponse)
+async def register(request: RegisterRequest, db: Session = Depends(get_db)):
+    """Register new user"""
+    # Check if user exists
+    if db.query(User).filter(User.email == request.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    if db.query(User).filter(User.username == request.username).first():
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Create new user
+    hashed_password = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    new_user = User(
+        email=request.email,
+        username=request.username,
+        hashed_password=hashed_password,
+        full_name=request.full_name,
+        role=request.role
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    return UserResponse.model_validate(new_user)
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """Get current user info"""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        return UserResponse.model_validate(user)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")

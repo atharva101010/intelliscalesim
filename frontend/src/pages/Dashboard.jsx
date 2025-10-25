@@ -1,0 +1,74 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Package, Gauge, BookOpen, BarChart3, Upload, Box, Zap } from 'lucide-react';
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const handleCardClick = (path) => {
+    navigate(`/student/${path}`);
+  };
+
+  const features = [
+    { title: 'Deploy Applications', description: 'Deploy Docker containers and manage deployments', icon: <Upload size={32} />, color: '#7c3aed', path: 'deploy' },
+    { title: 'My Containers', description: 'View and manage your running containers', icon: <Box size={32} />, color: '#ec4899', path: 'containers' },
+    { title: 'Auto-Scaling', description: 'Configure automatic scaling policies', icon: <Gauge size={32} />, color: '#06b6d4', path: 'auto-scaling' },
+    { title: 'Load Testing', description: 'Test your application performance under load', icon: <Zap size={32} />, color: '#f97316', path: 'load-testing' },
+    { title: 'Analytics Dashboard', description: 'Real-time monitoring with Prometheus & Grafana', icon: <BarChart3 size={32} />, color: '#10b981', path: 'analytics' },
+    { title: 'Documentation', description: 'Learn about Docker and auto-scaling', icon: <BookOpen size={32} />, color: '#f59e0b', path: 'documentation' }
+  ];
+
+  return (
+    <div style={{ padding: '30px', minHeight: '100vh' }}>
+      <div style={{ marginBottom: '40px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#6366f1', marginBottom: '12px' }}>Welcome to IntelliScaleSim</h1>
+        <p style={{ fontSize: '18px', color: '#6b7280' }}>Your Docker Auto-Scaling Learning Platform</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '16px' }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }}></div>
+          <span style={{ color: '#6b7280', fontSize: '14px' }}>All Systems Operational</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        {features.map((feature, index) => (
+          <div
+            key={index}
+            onClick={() => handleCardClick(feature.path)}
+            style={{
+              background: 'white',
+              padding: '32px',
+              borderRadius: '16px',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              border: '2px solid transparent'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-8px)';
+              e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
+              e.currentTarget.style.borderColor = feature.color;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+              e.currentTarget.style.borderColor = 'transparent';
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '16px', borderRadius: '12px', background: `${feature.color}20`, color: feature.color }}>
+                {feature.icon}
+              </div>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937' }}>{feature.title}</h3>
+            </div>
+            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '16px' }}>{feature.description}</p>
+            <button style={{ display: 'flex', alignItems: 'center', gap: '8px', color: feature.color, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}>
+              Explore Feature →
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

@@ -1,0 +1,212 @@
+import { useState, useEffect } from 'react';
+import { Container, Play, Square, Trash2, RefreshCw } from 'lucide-react';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8000';
+
+export default function ContainersPage() {
+  const [containers, setContainers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchContainers();
+    const interval = setInterval(fetchContainers, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchContainers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/containers`);
+      setContainers(response.data.containers || []);
+      setLoading(false);
+    } catch (err) {
+      console.error('Failed to fetch containers:', err);
+      setLoading(false);
+    }
+  };
+
+  const handleStart = async (id) => {
+    try {
+      await axios.post(`${API_BASE_URL}/containers/${id}/start`);
+      fetchContainers();
+    } catch (err) {
+      alert('Failed to start container: ' + err.message);
+    }
+  };
+
+  const handleStop = async (id) => {
+    try {
+      await axios.post(`${API_BASE_URL}/containers/${id}/stop`);
+      fetchContainers();
+    } catch (err) {
+      alert('Failed to stop container: ' + err.message);
+    }
+  };
+
+  const handleRemove = async (id) => {
+    if (!confirm('Are you sure you want to remove this container?')) return;
+    try {
+      await axios.delete(`${API_BASE_URL}/containers/${id}`);
+      fetchContainers();
+    } catch (err) {
+      alert('Failed to remove container: ' + err.message);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{width: '100%', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to bottom right, #EFF6FF, #E0E7FF)'}}>
+        <div style={{textAlign: 'center'}}>
+          <div style={{width: '80px', height: '80px', border: '5px solid #7C3AED', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px'}}></div>
+          <p style={{fontSize: '24px', fontWeight: 'bold', color: '#374151'}}>Loading Containers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{width: '100%', minHeight: '100vh', background: 'linear-gradient(to bottom right, #EFF6FF, #E0E7FF, #EDE9FE)', padding: '40px'}}>
+      
+      {/* Header */}
+      <div style={{width: '100%', background: 'white', borderRadius: '30px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', padding: '40px', marginBottom: '40px', border: '2px solid #E0E7FF'}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '30px'}}>
+            <div style={{width: '100px', height: '100px', background: 'linear-gradient(135deg, #7C3AED, #6366F1)', borderRadius: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 30px rgba(124, 58, 237, 0.4)'}}>
+              <Container style={{color: 'white', width: '50px', height: '50px'}} />
+            </div>
+            <div>
+              <h1 style={{fontSize: '48px', fontWeight: '900', color: '#111827', margin: 0}}>My Containers</h1>
+              <p style={{fontSize: '18px', color: '#6B7280', marginTop: '10px'}}>
+                {containers.length} container{containers.length !== 1 ? 's' : ''} running
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={fetchContainers}
+            style={{padding: '20px 40px', background: 'linear-gradient(135deg, #6366F1, #4F46E5)', color: 'white', fontWeight: 'bold', fontSize: '18px', borderRadius: '20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 30px rgba(99, 102, 241, 0.4)', transition: 'transform 0.2s'}}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            <RefreshCw size={24} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Containers Grid */}
+      {containers.length > 0 ? (
+        <div style={{display: 'grid', gap: '30px'}}>
+          {containers.map((container) => (
+            <div
+              key={container.id}
+              style={{background: 'white', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '40px', border: '2px solid #E0E7FF', transition: 'all 0.3s'}}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-5px)';
+                e.currentTarget.style.boxShadow = '0 30px 60px rgba(0,0,0,0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.1)';
+              }}
+            >
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '30px'}}>
+                
+                {/* Container Info */}
+                <div style={{flex: 1, minWidth: '300px'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px'}}>
+                    <div style={{width: '60px', height: '60px', background: 'linear-gradient(135deg, #7C3AED, #6366F1)', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 20px rgba(124, 58, 237, 0.3)'}}>
+                      <Container style={{color: 'white', width: '30px', height: '30px'}} />
+                    </div>
+                    <div>
+                      <h3 style={{fontSize: '28px', fontWeight: '900', color: '#111827', margin: 0}}>{container.name}</h3>
+                      <span style={{
+                        display: 'inline-block',
+                        marginTop: '8px',
+                        padding: '6px 16px',
+                        background: container.status === 'running' ? '#10B981' : '#EF4444',
+                        color: 'white',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        fontWeight: 'bold'
+                      }}>
+                        {container.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{background: '#F9FAFB', borderRadius: '15px', padding: '20px', marginTop: '20px'}}>
+                    <div style={{display: 'grid', gap: '12px'}}>
+                      <div>
+                        <p style={{fontSize: '14px', color: '#6B7280', fontWeight: '600', marginBottom: '5px'}}>Container ID</p>
+                        <p style={{fontSize: '16px', color: '#111827', fontFamily: 'monospace', fontWeight: 'bold'}}>{container.id}</p>
+                      </div>
+                      <div>
+                        <p style={{fontSize: '14px', color: '#6B7280', fontWeight: '600', marginBottom: '5px'}}>Image</p>
+                        <p style={{fontSize: '16px', color: '#111827', fontWeight: 'bold'}}>{container.image}</p>
+                      </div>
+                      {container.ports && container.ports.trim() !== '' && (
+                        <div>
+                          <p style={{fontSize: '14px', color: '#6B7280', fontWeight: '600', marginBottom: '5px'}}>Ports</p>
+                          <p style={{fontSize: '16px', color: '#7C3AED', fontFamily: 'monospace', fontWeight: 'bold'}}>{container.ports}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div style={{display: 'flex', flexDirection: 'column', gap: '15px', minWidth: '200px'}}>
+                  {container.status === 'running' ? (
+                    <button
+                      onClick={() => handleStop(container.id)}
+                      style={{padding: '18px 35px', background: 'linear-gradient(135deg, #EF4444, #DC2626)', color: 'white', fontWeight: 'bold', fontSize: '18px', borderRadius: '15px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 8px 20px rgba(239, 68, 68, 0.3)', transition: 'transform 0.2s'}}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                      <Square size={20} />
+                      Stop
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleStart(container.id)}
+                      style={{padding: '18px 35px', background: 'linear-gradient(135deg, #10B981, #059669)', color: 'white', fontWeight: 'bold', fontSize: '18px', borderRadius: '15px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 8px 20px rgba(16, 185, 129, 0.3)', transition: 'transform 0.2s'}}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                      <Play size={20} />
+                      Start
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={() => handleRemove(container.id)}
+                    style={{padding: '18px 35px', background: 'linear-gradient(135deg, #F59E0B, #D97706)', color: 'white', fontWeight: 'bold', fontSize: '18px', borderRadius: '15px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 8px 20px rgba(245, 158, 11, 0.3)', transition: 'transform 0.2s'}}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <Trash2 size={20} />
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{background: 'white', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '80px 40px', textAlign: 'center', border: '2px solid #E0E7FF'}}>
+          <Container size={100} style={{color: '#DBEAFE', margin: '0 auto 30px'}} />
+          <h2 style={{fontSize: '32px', fontWeight: '900', color: '#111827', marginBottom: '15px'}}>No Containers Running</h2>
+          <p style={{fontSize: '20px', color: '#6B7280', marginBottom: '30px'}}>Deploy your first application to get started!</p>
+          <button
+            onClick={() => window.location.href = '#deploy'}
+            style={{padding: '20px 50px', background: 'linear-gradient(135deg, #7C3AED, #6366F1)', color: 'white', fontWeight: 'bold', fontSize: '20px', borderRadius: '15px', border: 'none', cursor: 'pointer', boxShadow: '0 10px 30px rgba(124, 58, 237, 0.4)', transition: 'transform 0.2s'}}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            Deploy Application
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

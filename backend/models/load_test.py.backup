@@ -1,0 +1,40 @@
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON
+from sqlalchemy.sql import func
+from database import Base
+
+class LoadTest(Base):
+    __tablename__ = "load_tests"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    test_id = Column(String(255), unique=True, index=True, nullable=False)
+    user_id = Column(Integer, nullable=False)
+    
+    # Test Configuration
+    target_url = Column(String(500), nullable=False)
+    total_requests = Column(Integer, nullable=False)
+    concurrency = Column(Integer, nullable=False)
+    duration_seconds = Column(Integer, nullable=False)
+    method = Column(String(10), default="GET")
+    
+    # Test Results
+    status = Column(String(20), nullable=False)  # running, completed, failed
+    progress = Column(Float, default=0.0)
+    completed_requests = Column(Integer, default=0)
+    failed_requests = Column(Integer, default=0)
+    
+    # Performance Metrics
+    avg_response_time = Column(Float, default=0.0)
+    min_response_time = Column(Float, default=0.0)
+    max_response_time = Column(Float, default=0.0)
+    requests_per_second = Column(Float, default=0.0)
+    actual_duration = Column(Float, nullable=True)
+    
+    # System Metrics (stored as JSON arrays)
+    cpu_usage = Column(JSON, default=[])
+    memory_usage = Column(JSON, default=[])
+    
+    # Timestamps
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

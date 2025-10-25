@@ -1,0 +1,9 @@
+{
+  "id": "39010837345b",
+  "type": "docker_image",
+  "image_name": "minio/minio",
+  "container_name": "minio-storage",
+  "port": 9000,
+  "status": "running",
+  "timestamp": "2025-10-16T12:14:17.541993"
+}

@@ -1,0 +1,88 @@
+from fastapi import APIRouter, Body
+from pydantic import BaseModel
+from typing import Optional, Dict
+from services.deployment_service import deployment_service
+
+router = APIRouter(prefix="/api/deployment", tags=["deployment"])
+
+class DockerDeployment(BaseModel):
+    imageName: str
+    containerName: str
+    port: Optional[int] = None
+    userId: Optional[str] = "student"
+    userName: Optional[str] = "Student"
+    envVars: Optional[Dict[str, str]] = None
+    credentials: Optional[Dict[str, str]] = None  # { username, password } for private images
+
+class GitHubDeployment(BaseModel):
+    repoUrl: str
+    containerName: str
+    port: Optional[int] = None
+    userId: Optional[str] = "student"
+    userName: Optional[str] = "Student"
+    dockerfilePath: Optional[str] = "Dockerfile"
+    credentials: Optional[Dict[str, str]] = None  # { username, token } for private repos
+
+@router.post("/docker")
+async def deploy_docker_image(deployment: DockerDeployment):
+    """Deploy a Docker image from Docker Hub (supports private images with credentials)"""
+    result = deployment_service.deploy_docker_image(
+        image_name=deployment.imageName,
+        container_name=deployment.containerName,
+        port=deployment.port,
+        user_id=deployment.userId,
+        user_name=deployment.userName,
+        env_vars=deployment.envVars,
+        credentials=deployment.credentials
+    )
+    return result
+
+@router.post("/github")
+async def deploy_from_github(deployment: GitHubDeployment):
+    """Deploy from GitHub repository (supports private repos with credentials)"""
+    result = deployment_service.deploy_from_github(
+        repo_url=deployment.repoUrl,
+        container_name=deployment.containerName,
+        port=deployment.port,
+        user_id=deployment.userId,
+        user_name=deployment.userName,
+        dockerfile_path=deployment.dockerfilePath,
+        credentials=deployment.credentials
+    )
+    return result
+
+@router.post("/stop/{container_id}")
+async def stop_container(container_id: str):
+    """Stop a running container"""
+    result = deployment_service.stop_container(container_id)
+    return result
+
+@router.delete("/remove/{container_id}")
+async def remove_container(container_id: str, force: bool = False):
+    """Remove a container"""
+    result = deployment_service.remove_container(container_id, force)
+    return result
+
+@router.get("/history")
+async def get_deployment_history(limit: int = 50):
+    """Get deployment history"""
+    result = deployment_service.get_deployment_history(limit)
+    return result
+
+@router.get("/available-port")
+async def get_available_port():
+    """Get next available port"""
+    result = deployment_service.get_available_port()
+    return result
+
+@router.post("/start/{container_id}")
+async def start_container(container_id: str):
+    """Start a stopped container"""
+    try:
+        result = deployment_service.start_container(container_id)
+        if result.get("success"):
+            return {"success": True, "message": f"Container {container_id} started successfully"}
+        else:
+            return {"success": False, "message": result.get("error", "Failed to start container")}
+    except Exception as e:
+        return {"success": False, "message": str(e)}

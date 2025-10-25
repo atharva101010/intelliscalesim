@@ -1,0 +1,499 @@
+import React, { useState, useEffect } from 'react';
+import { Rocket, Package, Github, Server, Play, Trash2, AlertCircle, CheckCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { deploymentApi } from '../services/deploymentApi';
+import { metricsApi } from '../services/metricsApi';
+
+const Deploy = () => {
+  const [deploymentType, setDeploymentType] = useState('docker'); // 'docker' or 'github'
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deploymentHistory, setDeploymentHistory] = useState([]);
+  const [containers, setContainers] = useState([]);
+  
+  // Docker Hub form
+  const [dockerForm, setDockerForm] = useState({
+    imageName: '',
+    containerName: '',
+    port: ''
+  });
+  
+  // GitHub form
+  const [githubForm, setGithubForm] = useState({
+    repoUrl: '',
+    containerName: '',
+    port: '',
+    dockerfilePath: 'Dockerfile'
+  });
+
+  // Quick deploy templates
+  const quickTemplates = [
+    { name: 'NGINX Web Server', image: 'nginx:alpine', icon: '🌐' },
+    { name: 'Redis Cache', image: 'redis:alpine', icon: '🔴' },
+    { name: 'MongoDB Database', image: 'mongo:latest', icon: '🍃' },
+    { name: 'PostgreSQL Database', image: 'postgres:alpine', icon: '🐘' },
+    { name: 'Node.js App', image: 'node:alpine', icon: '🟢' },
+    { name: 'Python App', image: 'python:alpine', icon: '🐍' },
+  ];
+
+  // Fetch containers and history
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const metricsResponse = await metricsApi.getContainersMetrics();
+      if (metricsResponse.success) {
+        setContainers(metricsResponse.data.containers);
+      }
+
+      const historyResponse = await deploymentApi.getHistory();
+      if (historyResponse.success) {
+        setDeploymentHistory(historyResponse.data);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const handleQuickDeploy = (template) => {
+    setDeploymentType('docker');
+    setDockerForm({
+      imageName: template.image,
+      containerName: `${template.name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+      port: ''
+    });
+  };
+
+  const handleDockerDeploy = async (e) => {
+    e.preventDefault();
+    setIsDeploying(true);
+
+    try {
+      const result = await deploymentApi.deployDockerImage(
+        dockerForm.imageName,
+        dockerForm.containerName,
+        dockerForm.port ? parseInt(dockerForm.port) : null
+      );
+
+      if (result.success) {
+        alert(`✅ Deployed successfully!\n\nContainer: ${result.data.containerName}\nPort: ${result.data.port}\nURL: ${result.data.url}`);
+        setDockerForm({ imageName: '', containerName: '', port: '' });
+        fetchData();
+      } else {
+        alert(`❌ Deployment failed: ${result.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Deployment error: ${error.message}`);
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
+  const handleGithubDeploy = async (e) => {
+    e.preventDefault();
+    setIsDeploying(true);
+
+    try {
+      const result = await deploymentApi.deployFromGitHub(
+        githubForm.repoUrl,
+        githubForm.containerName,
+        githubForm.port ? parseInt(githubForm.port) : null,
+        'student',
+        'Student',
+        githubForm.dockerfilePath
+      );
+
+      if (result.success) {
+        alert(`✅ Deployed successfully!\n\nContainer: ${result.data.containerName}\nPort: ${result.data.port}`);
+        setGithubForm({ repoUrl: '', containerName: '', port: '', dockerfilePath: 'Dockerfile' });
+        fetchData();
+      } else {
+        alert(`❌ Deployment failed: ${result.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Deployment error: ${error.message}`);
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
+  const handleRemoveContainer = async (containerId, containerName) => {
+    if (!confirm(`Are you sure you want to remove ${containerName}?`)) return;
+
+    try {
+      const result = await deploymentApi.removeContainer(containerId, true);
+      if (result.success) {
+        alert('✅ Container removed successfully');
+        fetchData();
+      } else {
+        alert(`❌ Failed to remove: ${result.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <div style={{ padding: '30px', minHeight: '100vh', background: '#f3f4f6' }}>
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ background: 'white', padding: '28px', borderRadius: '16px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: 'white', boxShadow: '0 4px 12px rgba(99,102,241,0.3)' }}>
+            <Rocket size={36} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>Deploy Application</h1>
+            <p style={{ fontSize: '16px', color: '#6b7280' }}>Deploy containers from Docker Hub or GitHub repositories</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Deploy Templates */}
+      <div style={{ background: 'white', padding: '28px', borderRadius: '16px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px' }}>🚀 Quick Deploy Templates</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+          {quickTemplates.map((template, index) => (
+            <button
+              key={index}
+              onClick={() => handleQuickDeploy(template)}
+              style={{
+                padding: '16px',
+                background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+                border: '2px solid #e5e7eb',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <span style={{ fontSize: '32px' }}>{template.icon}</span>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1f2937' }}>{template.name}</div>
+                <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{template.image}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Deployment Form */}
+      <div style={{ background: 'white', padding: '28px', borderRadius: '16px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '2px solid #e5e7eb', paddingBottom: '12px' }}>
+          <button
+            onClick={() => setDeploymentType('docker')}
+            style={{
+              padding: '12px 24px',
+              background: deploymentType === 'docker' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent',
+              color: deploymentType === 'docker' ? 'white' : '#6b7280',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <Package size={20} />
+            Docker Hub
+          </button>
+          <button
+            onClick={() => setDeploymentType('github')}
+            style={{
+              padding: '12px 24px',
+              background: deploymentType === 'github' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent',
+              color: deploymentType === 'github' ? 'white' : '#6b7280',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <Github size={20} />
+            GitHub
+          </button>
+        </div>
+
+        {/* Docker Hub Form */}
+        {deploymentType === 'docker' && (
+          <form onSubmit={handleDockerDeploy}>
+            <div style={{ display: 'grid', gap: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
+                  Docker Image Name <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={dockerForm.imageName}
+                  onChange={(e) => setDockerForm({ ...dockerForm, imageName: e.target.value })}
+                  placeholder="e.g., nginx:alpine, redis:latest"
+                  style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
+                />
+                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Enter any public Docker Hub image</p>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
+                  Container Name <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={dockerForm.containerName}
+                  onChange={(e) => setDockerForm({ ...dockerForm, containerName: e.target.value })}
+                  placeholder="e.g., my-web-app"
+                  style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
+                  Port (optional)
+                </label>
+                <input
+                  type="number"
+                  value={dockerForm.port}
+                  onChange={(e) => setDockerForm({ ...dockerForm, port: e.target.value })}
+                  placeholder="Auto-assign if empty"
+                  style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
+                />
+                <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Leave empty for auto port assignment</p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isDeploying}
+                style={{
+                  padding: '16px',
+                  background: isDeploying ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: isDeploying ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}
+              >
+                {isDeploying ? (
+                  <>
+                    <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                    Deploying...
+                  </>
+                ) : (
+                  <>
+                    <Play size={20} />
+                    Deploy Container
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* GitHub Form */}
+        {deploymentType === 'github' && (
+          <form onSubmit={handleGithubDeploy}>
+            <div style={{ display: 'grid', gap: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
+                  GitHub Repository URL <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={githubForm.repoUrl}
+                  onChange={(e) => setGithubForm({ ...githubForm, repoUrl: e.target.value })}
+                  placeholder="e.g., https://github.com/user/repo.git"
+                  style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
+                  Container Name <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={githubForm.containerName}
+                  onChange={(e) => setGithubForm({ ...githubForm, containerName: e.target.value })}
+                  placeholder="e.g., my-app"
+                  style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
+                  Dockerfile Path
+                </label>
+                <input
+                  type="text"
+                  value={githubForm.dockerfilePath}
+                  onChange={(e) => setGithubForm({ ...githubForm, dockerfilePath: e.target.value })}
+                  placeholder="Dockerfile"
+                  style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#1f2937' }}>
+                  Port (optional)
+                </label>
+                <input
+                  type="number"
+                  value={githubForm.port}
+                  onChange={(e) => setGithubForm({ ...githubForm, port: e.target.value })}
+                  placeholder="Auto-assign if empty"
+                  style={{ width: '100%', padding: '12px', border: '2px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isDeploying}
+                style={{
+                  padding: '16px',
+                  background: isDeploying ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  cursor: isDeploying ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}
+              >
+                {isDeploying ? (
+                  <>
+                    <RefreshCw size={20} style={{ animation: 'spin 1s linear infinite' }} />
+                    Building & Deploying...
+                  </>
+                ) : (
+                  <>
+                    <Play size={20} />
+                    Build & Deploy
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+
+      {/* Deployed Containers */}
+      <div style={{ background: 'white', padding: '28px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Server size={24} style={{ color: '#10b981' }} />
+          Your Deployed Containers ({containers.length})
+        </h3>
+        {containers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '64px 24px', background: '#f9fafb', borderRadius: '12px' }}>
+            <Server size={48} style={{ margin: '0 auto 16px', opacity: 0.3, color: '#9ca3af' }} />
+            <p style={{ fontSize: '18px', fontWeight: '600', color: '#6b7280', marginBottom: '8px' }}>No containers deployed yet</p>
+            <p style={{ fontSize: '14px', color: '#9ca3af' }}>Deploy your first container using the form above</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: '14px' }}>
+            {containers.map((container) => (
+              <div
+                key={container.id}
+                style={{
+                  padding: '20px',
+                  background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
+                  borderRadius: '12px',
+                  border: '2px solid #e5e7eb',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1f2937', marginBottom: '8px' }}>
+                    {container.name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+                    📦 {container.image}
+                  </div>
+                  {container.metrics && container.metrics.running && (
+                    <div style={{ fontSize: '13px', color: '#6b7280', display: 'flex', gap: '16px' }}>
+                      <span>💻 CPU: <strong>{container.metrics.cpu}%</strong></span>
+                      <span>🧠 Memory: <strong>{container.metrics.memory}%</strong></span>
+                      <span>📊 {container.metrics.memoryUsage}</span>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{
+                    fontSize: '13px',
+                    padding: '6px 12px',
+                    background: container.status === 'running' ? '#dcfce7' : '#fee2e2',
+                    color: container.status === 'running' ? '#047857' : '#991b1b',
+                    borderRadius: '6px',
+                    fontWeight: 'bold'
+                  }}>
+                    {container.status === 'running' ? '✓ Running' : container.status}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveContainer(container.fullId, container.name)}
+                    style={{
+                      padding: '8px 12px',
+                      background: '#fee2e2',
+                      color: '#dc2626',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '13px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    <Trash2 size={16} />
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Deploy;

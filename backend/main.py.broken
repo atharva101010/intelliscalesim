@@ -1,0 +1,239 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import subprocess
+import json
+from typing import Optional
+
+app = FastAPI()
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Models
+class DeployRequest(BaseModel):
+    image: str
+    name: str
+    port: Optional[int] = None
+
+class GitDeployRequest(BaseModel):
+    repo_url: str
+    name: str
+    port: Optional[int] = None
+
+# Helper function
+def run_docker_command(cmd: str):
+    try:
+        result = subprocess.run(f"docker {cmd}", shell=True, capture_output=True, text=True)
+        return result.stdout
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Health check
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+# ===== CONTAINER ENDPOINTS =====
+@app.get("/containers")
+def get_containers():
+    try:
+        cmd = "ps --format json --filter label=intelliscalesim=true"
+        output = run_docker_command(cmd)
+        
+        containers = []
+        if output.strip():
+            for line in output.strip().split('\n'):
+                if line.strip():
+                    container = json.loads(line)
+                    containers.append({
+                        "id": container["ID"][:12],
+                        "name": container["Names"],
+                        "image": container["Image"],
+                        "status": container["State"],
+                        "ports": container.get("Ports", "")
+                    })
+        
+        return {"containers": containers}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/deploy")
+def deploy_container(request: DeployRequest):
+    try:
+        port_mapping = f"-p {request.port}:80" if request.port else ""
+        cmd = f"run -d --name {request.name} {port_mapping} --label intelliscalesim=true {request.image}"
+        output = run_docker_command(cmd)
+        return {"message": "Container deployed successfully", "container_id": output.strip()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/deploy/git")
+def deploy_from_git(request: GitDeployRequest):
+    try:
+        import os
+        import tempfile
+        import shutil
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            subprocess.run(f"git clone {request.repo_url} {tmpdir}/repo", shell=True, check=True)
+            
+            dockerfile_path = f"{tmpdir}/repo/Dockerfile"
+            if not os.path.exists(dockerfile_path):
+                raise HTTPException(status_code=400, detail="No Dockerfile found in repository")
+            
+            subprocess.run(f"docker build -t {request.name}:latest {tmpdir}/repo", shell=True, check=True)
+            
+            port_mapping = f"-p {request.port}:80" if request.port else ""
+            cmd = f"run -d --name {request.name} {port_mapping} --label intelliscalesim=true {request.name}:latest"
+            output = run_docker_command(cmd)
+            
+            return {"message": "Container deployed from Git successfully", "container_id": output.strip()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/containers/{container_id}/start")
+def start_container(container_id: str):
+    try:
+        run_docker_command(f"start {container_id}")
+        return {"message": "Container started"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/containers/{container_id}/stop")
+def stop_container(container_id: str):
+    try:
+        run_docker_command(f"stop {container_id}")
+        return {"message": "Container stopped"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/containers/{container_id}")
+def remove_container(container_id: str):
+    try:
+        run_docker_command(f"rm -f {container_id}")
+        return {"message": "Container removed"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== METRICS ENDPOINTS =====
+@app.get("/metrics/system")
+def get_system_metrics():
+    try:
+        cmd = 'stats --no-stream --format "{{json .}}"'
+        result = subprocess.run(f"docker {cmd}", shell=True, capture_output=True, text=True)
+        output = result.stdout
+        
+        containers = []
+        total = 0
+        
+        if output.strip():
+            for line in output.strip().split('
+'):
+                if line.strip():
+                    try:
+                        stat = json.loads(line)
+                        container_id = stat.get("ID", "")[:12]
+                        
+                        # Check if container has intelliscalesim label
+                        inspect_cmd = f'inspect {container_id} --format "{{{{.Config.Labels.intelliscalesim}}}}"'
+                        inspect_result = subprocess.run(f"docker {inspect_cmd}", shell=True, capture_output=True, text=True)
+                        
+                        if inspect_result.stdout.strip() != "true":
+                            continue
+                        
+                        # Parse CPU and Memory
+                        cpu_str = stat.get("CPUPerc", "0%").replace("%", "")
+                        mem_str = stat.get("MemPerc", "0%").replace("%", "")
+                        
+                        containers.append({
+                            "id": container_id,
+                            "name": stat.get("Name", ""),
+                            "cpu": cpu_str,
+                            "memory": mem_str,
+                            "net_io": stat.get("NetIO", "0B / 0B")
+                        })
+                        total += 1
+                    except Exception as e:
+                        print(f"Error parsing container: {e}")
+                        continue
+        
+        return {
+            "total_containers": total,
+            "containers": containers
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== AUTO-SCALING ENDPOINTS =====
+from autoscaler import autoscaler
+
+@app.on_event("startup")
+async def startup_event():
+    """Start autoscaler on app startup"""
+    autoscaler.start()
+    print("🚀 Auto-scaler started on startup!")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stop autoscaler on app shutdown"""
+    autoscaler.stop()
+
+@app.get("/autoscaler/status")
+def get_autoscaler_status():
+    """Get autoscaler status and configuration"""
+    return autoscaler.get_status()
+
+@app.post("/autoscaler/start")
+def start_autoscaler():
+    """Start the autoscaler"""
+    autoscaler.start()
+    return {"message": "Autoscaler started", "status": "running"}
+
+@app.post("/autoscaler/stop")
+def stop_autoscaler():
+    """Stop the autoscaler"""
+    autoscaler.stop()
+    return {"message": "Autoscaler stopped", "status": "stopped"}
+
+@app.post("/autoscaler/enable/{container_name}")
+def enable_autoscaling(container_name: str):
+    """Enable autoscaling for a specific container"""
+    autoscaler.enable_for_container(container_name)
+    return {"message": f"Autoscaling enabled for {container_name}"}
+
+@app.post("/autoscaler/disable/{container_name}")
+def disable_autoscaling(container_name: str):
+    """Disable autoscaling for a specific container"""
+    autoscaler.disable_for_container(container_name)
+    return {"message": f"Autoscaling disabled for {container_name}"}
+
+@app.put("/autoscaler/config")
+def update_autoscaler_config(config: dict):
+    """Update autoscaler configuration"""
+    if "cpu_scale_up" in config:
+        autoscaler.cpu_scale_up_threshold = float(config["cpu_scale_up"])
+    if "cpu_scale_down" in config:
+        autoscaler.cpu_scale_down_threshold = float(config["cpu_scale_down"])
+    if "memory_scale_up" in config:
+        autoscaler.memory_scale_up_threshold = float(config["memory_scale_up"])
+    if "memory_scale_down" in config:
+        autoscaler.memory_scale_down_threshold = float(config["memory_scale_down"])
+    if "min_replicas" in config:
+        autoscaler.min_replicas = int(config["min_replicas"])
+    if "max_replicas" in config:
+        autoscaler.max_replicas = int(config["max_replicas"])
+    if "check_interval" in config:
+        autoscaler.check_interval = int(config["check_interval"])
+    
+    return {"message": "Configuration updated successfully", "config": autoscaler.get_status()}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

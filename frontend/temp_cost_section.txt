@@ -1,0 +1,14 @@
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">CPU Usage</span>
+                  <span className="text-xl font-semibold text-blue-600">${costs.cpu.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Memory Usage</span>
+                  <span className="text-xl font-semibold text-blue-600">${costs.memory.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Storage</span>
+                  <span className="text-xl font-semibold text-blue-600">${costs.storage.toFixed(4)}</span>
+                </div>
+              </div>

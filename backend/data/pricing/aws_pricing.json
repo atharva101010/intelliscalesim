@@ -1,0 +1,19 @@
+{
+  "provider": "AWS",
+  "region": "us-east-1",
+  "currency": "USD",
+  "last_updated": "2024-10-24",
+  "compute": {
+    "cpu_per_vcpu_hour": 0.0416,
+    "memory_per_gb_hour": 0.0104,
+    "description": "EC2 t3.medium equivalent pricing"
+  },
+  "storage": {
+    "storage_per_gb_month": 0.10,
+    "description": "EBS General Purpose SSD (gp3)"
+  },
+  "network": {
+    "data_transfer_out_per_gb": 0.09,
+    "data_transfer_in_per_gb": 0.00
+  }
+}

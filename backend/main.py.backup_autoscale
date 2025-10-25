@@ -1,0 +1,360 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, List
+import subprocess
+import json
+import os
+from datetime import datetime
+
+app = FastAPI()
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Models
+class DockerDeployment(BaseModel):
+    image_name: str
+    container_name: Optional[str] = None
+    port: int
+    container_port: Optional[int] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+
+class GitHubDeployment(BaseModel):
+    repo_url: str
+    branch: str = "main"
+    container_name: Optional[str] = None
+    port: int
+    container_port: Optional[int] = None
+    username: Optional[str] = None
+    access_token: Optional[str] = None
+
+def run_docker_command(cmd):
+    """Run Docker command"""
+    full_cmd = f"docker {cmd}"
+    result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise Exception(f"Docker command failed: {result.stderr}")
+    return result.stdout
+
+def get_default_container_port(image_name: str) -> int:
+    """Get default container port based on image name"""
+    defaults = {
+        'nginx': 80,
+        'httpd': 80,
+        'apache': 80,
+        'tomcat': 8080,
+        'node': 3000,
+        'python': 8000,
+        'redis': 6379,
+        'postgres': 5432,
+        'mysql': 3306,
+        'mongodb': 27017,
+    }
+    
+    for key, port in defaults.items():
+        if key in image_name.lower():
+            return port
+    
+    return 8080
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+def format_ports(port_dict):
+    """Format Docker ports dictionary to simple string array"""
+    if not port_dict:
+        return []
+    
+    ports = []
+    for container_port, host_bindings in port_dict.items():
+        if host_bindings:
+            for binding in host_bindings:
+                host_port = binding.get('HostPort')
+                if host_port:
+                    ports.append(f"{host_port}:{container_port.split('/')[0]}")
+    return ports
+
+@app.get("/containers")
+def get_containers(all: bool = False):
+    try:
+        cmd = "ps --format json"
+        if all:
+            cmd += " -a"
+        cmd += " --filter label=intelliscalesim=true"
+        
+        output = run_docker_command(cmd)
+        
+        container_list = []
+        for line in output.strip().split('\n'):
+            if line.strip():
+                container_data = json.loads(line)
+                
+                inspect_cmd = f"inspect {container_data['ID']}"
+                inspect_output = run_docker_command(inspect_cmd)
+                inspect_data = json.loads(inspect_output)[0]
+                
+                container_list.append({
+                    "id": container_data['ID'],
+                    "name": container_data['Names'],
+                    "image": container_data['Image'],
+                    "status": container_data['State'],
+                    "created": container_data['CreatedAt'],
+                    "ports": format_ports(inspect_data['NetworkSettings']['Ports']),
+                    "labels": inspect_data['Config']['Labels'] or {}
+                })
+        
+        return {"count": len(container_list), "containers": container_list}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/containers/{container_id}/start")
+def start_container(container_id: str):
+    try:
+        run_docker_command(f"start {container_id}")
+        return {"message": f"Container {container_id} started successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/containers/{container_id}/stop")
+def stop_container(container_id: str):
+    try:
+        run_docker_command(f"stop {container_id}")
+        return {"message": f"Container {container_id} stopped successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/containers/{container_id}")
+def remove_container(container_id: str):
+    try:
+        run_docker_command(f"rm -f {container_id}")
+        return {"message": f"Container {container_id} removed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/deploy/docker-image")
+def deploy_docker_image(deployment: DockerDeployment):
+    try:
+        print(f"Pulling image: {deployment.image_name}")
+        run_docker_command(f"pull {deployment.image_name}")
+        
+        container_name = deployment.container_name or f"container_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        container_port = deployment.container_port or get_default_container_port(deployment.image_name)
+        
+        cmd = f"run -d --name {container_name} -p {deployment.port}:{container_port} "
+        cmd += f"--label intelliscalesim=true "
+        cmd += f"--label deployment_type=docker_image "
+        cmd += f"--label deployed_at={datetime.now().isoformat()} "
+        cmd += deployment.image_name
+        
+        output = run_docker_command(cmd)
+        container_id = output.strip()
+        
+        return {
+            "message": "Container deployed successfully",
+            "container_id": container_id,
+            "container_name": container_name,
+            "port_mapping": f"{deployment.port}:{container_port}",
+            "access_url": f"http://localhost:{deployment.port}"
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/deploy/github")
+def deploy_github(deployment: GitHubDeployment):
+    try:
+        import tempfile
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            clone_cmd = f"git clone -b {deployment.branch} {deployment.repo_url} {temp_dir}"
+            subprocess.run(clone_cmd, shell=True, check=True)
+            
+            repo_name = deployment.repo_url.split('/')[-1].replace('.git', '')
+            image_name = f"intelliscalesim/{repo_name}:latest"
+            container_name = deployment.container_name or f"{repo_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            print(f"Building image from {temp_dir}")
+            build_cmd = f"build -t {image_name} {temp_dir}"
+            run_docker_command(build_cmd)
+            
+            container_port = deployment.container_port or 8080
+            
+            cmd = f"run -d --name {container_name} -p {deployment.port}:{container_port} "
+            cmd += f"--label intelliscalesim=true "
+            cmd += f"--label deployment_type=github "
+            cmd += f"--label deployed_at={datetime.now().isoformat()} "
+            cmd += f"--label repo_url={deployment.repo_url} "
+            cmd += image_name
+            
+            output = run_docker_command(cmd)
+            container_id = output.strip()
+            
+            return {
+                "message": "Application deployed successfully from GitHub",
+                "container_id": container_id,
+                "container_name": container_name,
+                "image_name": image_name,
+                "port_mapping": f"{deployment.port}:{container_port}",
+                "access_url": f"http://localhost:{deployment.port}"
+            }
+    
+    except subprocess.CalledProcessError:
+        raise HTTPException(status_code=400, detail="Failed to clone repository. Check URL and credentials.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/deployments/history")
+def get_deployment_history():
+    try:
+        cmd = "ps -a --format json --filter label=intelliscalesim=true"
+        output = run_docker_command(cmd)
+        
+        history = []
+        for line in output.strip().split('\n'):
+            if line.strip():
+                container_data = json.loads(line)
+                
+                inspect_cmd = f"inspect {container_data['ID']}"
+                inspect_output = run_docker_command(inspect_cmd)
+                inspect_data = json.loads(inspect_output)[0]
+                labels = inspect_data['Config']['Labels'] or {}
+                
+                history.append({
+                    "container_name": container_data['Names'],
+                    "image": container_data['Image'],
+                    "status": container_data['State'],
+                    "deployment_type": labels.get("deployment_type", "unknown"),
+                    "deployed_at": labels.get("deployed_at", "unknown"),
+                    "repo_url": labels.get("repo_url", None)
+                })
+        
+        return {"count": len(history), "deployments": history}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== METRICS ENDPOINTS =====
+
+@app.get("/metrics/system")
+def get_system_metrics():
+    """Get overall system metrics"""
+    try:
+        cmd = "stats --no-stream --format json --all"
+        output = run_docker_command(cmd)
+        
+        containers_stats = []
+        for line in output.strip().split('\n'):
+            if line.strip():
+                stat = json.loads(line)
+                containers_stats.append({
+                    "id": stat.get("ID", "")[:12],
+                    "name": stat.get("Name", ""),
+                    "cpu": stat.get("CPUPerc", "0%"),
+                    "memory": stat.get("MemPerc", "0%"),
+                    "net_io": stat.get("NetIO", "0B / 0B")
+                })
+        
+        return {
+            "total_containers": len(containers_stats),
+            "containers": containers_stats,
+            "grafana_url": "http://localhost:3001",
+            "prometheus_url": "http://localhost:9090"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/metrics/containers/{container_id}")
+def get_container_metrics(container_id: str):
+    """Get real-time metrics for a specific container"""
+    try:
+        cmd = f"stats {container_id} --no-stream --format json"
+        output = run_docker_command(cmd)
+        stats = json.loads(output)
+        
+        return {
+            "container_id": stats.get("ID", ""),
+            "name": stats.get("Name", ""),
+            "cpu_percent": stats.get("CPUPerc", "0%"),
+            "memory_usage": stats.get("MemUsage", "0B / 0B"),
+            "memory_percent": stats.get("MemPerc", "0%"),
+            "network_io": stats.get("NetIO", "0B / 0B"),
+            "block_io": stats.get("BlockIO", "0B / 0B"),
+            "pids": stats.get("PIDs", "0")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+# ===== AUTO-SCALING ENDPOINTS =====
+from autoscaler import autoscaler
+
+@app.on_event("startup")
+async def startup_event():
+    """Start autoscaler on app startup"""
+    autoscaler.start()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stop autoscaler on app shutdown"""
+    autoscaler.stop()
+
+@app.get("/autoscaler/status")
+def get_autoscaler_status():
+    """Get autoscaler status and configuration"""
+    return autoscaler.get_status()
+
+@app.post("/autoscaler/start")
+def start_autoscaler():
+    """Start the autoscaler"""
+    autoscaler.start()
+    return {"message": "Autoscaler started", "status": autoscaler.running}
+
+@app.post("/autoscaler/stop")
+def stop_autoscaler():
+    """Stop the autoscaler"""
+    autoscaler.stop()
+    return {"message": "Autoscaler stopped", "status": autoscaler.running}
+
+@app.post("/autoscaler/enable/{container_name}")
+def enable_autoscaling(container_name: str):
+    """Enable autoscaling for a specific container"""
+    autoscaler.enable_for_container(container_name)
+    return {"message": f"Autoscaling enabled for {container_name}"}
+
+@app.post("/autoscaler/disable/{container_name}")
+def disable_autoscaling(container_name: str):
+    """Disable autoscaling for a specific container"""
+    autoscaler.disable_for_container(container_name)
+    return {"message": f"Autoscaling disabled for {container_name}"}
+
+@app.put("/autoscaler/config")
+def update_autoscaler_config(config: dict):
+    """Update autoscaler configuration"""
+    if "cpu_scale_up" in config:
+        autoscaler.cpu_scale_up_threshold = config["cpu_scale_up"]
+    if "cpu_scale_down" in config:
+        autoscaler.cpu_scale_down_threshold = config["cpu_scale_down"]
+    if "memory_scale_up" in config:
+        autoscaler.memory_scale_up_threshold = config["memory_scale_up"]
+    if "memory_scale_down" in config:
+        autoscaler.memory_scale_down_threshold = config["memory_scale_down"]
+    if "min_replicas" in config:
+        autoscaler.min_replicas = config["min_replicas"]
+    if "max_replicas" in config:
+        autoscaler.max_replicas = config["max_replicas"]
+    if "check_interval" in config:
+        autoscaler.check_interval = config["check_interval"]
+    
+    return {"message": "Configuration updated", "config": autoscaler.get_status()}

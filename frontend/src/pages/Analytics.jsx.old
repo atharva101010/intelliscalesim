@@ -1,0 +1,255 @@
+import { useState, useEffect } from 'react';
+import { Activity, Cpu, HardDrive, Network, Server, ExternalLink, BarChart3, Clock } from 'lucide-react';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8000';
+
+export default function Analytics() {
+  const [systemMetrics, setSystemMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchSystemMetrics();
+    const interval = setInterval(fetchSystemMetrics, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchSystemMetrics = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/metrics/system`);
+      setSystemMetrics(response.data);
+      setLoading(false);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch metrics:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <div className="absolute top-0 left-0 w-full h-full border-4 border-purple-200 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-full h-full border-4 border-purple-600 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-xl font-semibold text-gray-700">Loading Analytics...</p>
+          <p className="text-sm text-gray-500 mt-2">Fetching real-time metrics</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-8 flex items-center justify-center">
+        <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 border-2 border-red-200">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="bg-red-100 p-4 rounded-2xl">
+              <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Connection Error</h2>
+              <p className="text-gray-600">Unable to fetch metrics</p>
+            </div>
+          </div>
+          <div className="bg-red-50 rounded-2xl p-4 mt-4">
+            <p className="text-red-800 font-medium">{error}</p>
+            <p className="text-red-600 text-sm mt-2">Please ensure the backend is running on http://localhost:8000</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        
+        {/* Header Section */}
+        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+          <div className="flex justify-between items-center flex-wrap gap-6">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 rounded-2xl shadow-lg">
+                <BarChart3 className="text-white" size={32} />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  Real-time Monitoring
+                </h1>
+                <p className="text-gray-600 mt-2 flex items-center gap-2">
+                  <Clock size={16} />
+                  Live container performance metrics • Updates every 5 seconds
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.open('http://localhost:3001', '_blank')}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all"
+              >
+                <ExternalLink size={20} />
+                Grafana
+              </button>
+              <button
+                onClick={() => window.open('http://localhost:9090', '_blank')}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all"
+              >
+                <ExternalLink size={20} />
+                Prometheus
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Total Containers */}
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl shadow-2xl p-8 text-white transform hover:scale-105 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <Server size={40} className="opacity-80" />
+              <div className="bg-white/20 px-4 py-2 rounded-full text-sm font-semibold backdrop-blur-sm">
+                Active
+              </div>
+            </div>
+            <div className="mt-6">
+              <p className="text-purple-100 text-sm font-medium mb-2">Total Containers</p>
+              <p className="text-6xl font-bold mb-2">{systemMetrics?.total_containers || 0}</p>
+              <p className="text-purple-100 text-sm">Currently being monitored</p>
+            </div>
+          </div>
+
+          {/* Monitoring Status */}
+          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl shadow-2xl p-8 text-white transform hover:scale-105 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <Activity size={40} className="opacity-80" />
+              <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-sm">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <span className="text-sm font-semibold">Live</span>
+              </div>
+            </div>
+            <div className="mt-6">
+              <p className="text-green-100 text-sm font-medium mb-2">System Status</p>
+              <p className="text-5xl font-bold mb-2">Active</p>
+              <p className="text-green-100 text-sm">All systems operational</p>
+            </div>
+          </div>
+
+          {/* Monitoring Stack */}
+          <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-3xl shadow-2xl p-8 text-white transform hover:scale-105 transition-all">
+            <div className="flex items-center justify-between mb-4">
+              <BarChart3 size={40} className="opacity-80" />
+            </div>
+            <div className="mt-6">
+              <p className="text-blue-100 text-sm font-medium mb-4">Monitoring Stack</p>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-sm font-bold">Prometheus</span>
+                <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-sm font-bold">Grafana</span>
+                <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-sm font-bold">cAdvisor</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Container Metrics Section */}
+        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-2xl">
+              <Server className="text-white" size={28} />
+            </div>
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Container Metrics</h2>
+              <p className="text-gray-600 mt-1">Real-time resource usage per container</p>
+            </div>
+          </div>
+
+          {systemMetrics?.containers && systemMetrics.containers.length > 0 ? (
+            <div className="grid gap-6">
+              {systemMetrics.containers.map((container, index) => (
+                <div
+                  key={container.id}
+                  className="bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 rounded-2xl p-6 hover:shadow-xl transition-all hover:border-purple-300"
+                >
+                  {/* Container Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-2xl shadow-lg">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-gray-900">{container.name}</h3>
+                      <p className="text-sm text-gray-500 font-mono mt-1">Container ID: {container.id}</p>
+                    </div>
+                  </div>
+
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* CPU Metric */}
+                    <div className="bg-white rounded-xl p-5 border-2 border-blue-200 shadow-sm hover:shadow-md transition-all">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-blue-100 p-2 rounded-lg">
+                          <Cpu className="text-blue-600" size={24} />
+                        </div>
+                        <p className="text-sm font-bold text-gray-600">CPU Usage</p>
+                      </div>
+                      <p className="text-4xl font-bold text-blue-600">{container.cpu}</p>
+                    </div>
+
+                    {/* Memory Metric */}
+                    <div className="bg-white rounded-xl p-5 border-2 border-green-200 shadow-sm hover:shadow-md transition-all">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-green-100 p-2 rounded-lg">
+                          <HardDrive className="text-green-600" size={24} />
+                        </div>
+                        <p className="text-sm font-bold text-gray-600">Memory</p>
+                      </div>
+                      <p className="text-4xl font-bold text-green-600">{container.memory}</p>
+                    </div>
+
+                    {/* Network Metric */}
+                    <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-sm hover:shadow-md transition-all">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-purple-100 p-2 rounded-lg">
+                          <Network className="text-purple-600" size={24} />
+                        </div>
+                        <p className="text-sm font-bold text-gray-600">Network I/O</p>
+                      </div>
+                      <p className="text-2xl font-bold text-purple-600">{container.net_io}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-12 text-center">
+              <Server size={64} className="mx-auto text-blue-400 mb-4" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">No Containers Running</h3>
+              <p className="text-gray-600 text-lg">Deploy some applications to see real-time performance metrics here!</p>
+            </div>
+          )}
+        </div>
+
+        {/* Info Banner */}
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl shadow-2xl p-8 text-white">
+          <div className="flex items-start gap-4">
+            <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
+              <Activity className="text-white" size={32} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-2xl font-bold mb-3">Advanced Analytics & Insights</h3>
+              <p className="text-purple-100 text-lg leading-relaxed">
+                For comprehensive dashboards with historical data, detailed graphs, and advanced querying capabilities, 
+                access <span className="font-bold text-white">Grafana</span> for visualizations or <span className="font-bold text-white">Prometheus</span> for raw metrics. 
+                Both tools provide professional-grade monitoring solutions for production environments.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

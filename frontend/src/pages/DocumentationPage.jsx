@@ -1,0 +1,803 @@
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { BookOpen, Package, Github, CheckCircle, AlertTriangle, Terminal, Lightbulb, FileCode, Copy, Upload, Tag, FolderTree, Link } from 'lucide-react';
+
+const DocumentationPage = () => {
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState('docker');
+  const [copiedText, setCopiedText] = useState('');
+
+  const copyToClipboard = (text, id) => {
+
+  // Handle tab switching from navigation state (from Deploy page)
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location]);
+    navigator.clipboard.writeText(text);
+
+  // Handle tab switching from navigation state (from Deploy page)
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location]);
+    setCopiedText(id);
+
+  // Handle tab switching from navigation state (from Deploy page)
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location]);
+    setTimeout(() => setCopiedText(''), 2000);
+
+  // Handle tab switching from navigation state (from Deploy page)
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location]);
+  };
+
+  // Handle tab switching from navigation state (from Deploy page)
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location]);
+
+  const CodeBlock = ({ code, id }) => (
+    <div style={{ position: 'relative', marginTop: '12px' }}>
+      <code style={{ display: 'block', padding: '16px', background: '#1f2937', color: '#10b981', borderRadius: '8px', fontSize: '14px', fontFamily: 'monospace', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
+        {code}
+      </code>
+      <button
+        onClick={() => copyToClipboard(code, id)}
+        style={{ position: 'absolute', top: '8px', right: '8px', padding: '6px 12px', background: copiedText === id ? '#10b981' : '#374151', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+      >
+        <Copy size={14} />
+        {copiedText === id ? 'Copied!' : 'Copy'}
+      </button>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: '30px', minHeight: '100vh' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+          <div style={{ padding: '12px', borderRadius: '12px', background: '#f59e0b20', color: '#f59e0b' }}>
+            <BookOpen size={32} />
+          </div>
+          <h1 style={{ fontSize: '36px', fontWeight: 'bold', color: '#1f2937' }}>Deployment Documentation</h1>
+        </div>
+        <p style={{ fontSize: '16px', color: '#6b7280', marginLeft: '60px' }}>
+          Complete guide to deploy your applications on IntelliScaleSim
+        </p>
+      </div>
+
+      {/* Quick Start Banner */}
+      <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '24px', borderRadius: '16px', marginBottom: '32px', color: 'white' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Lightbulb size={28} />
+          Quick Start Guide
+        </h2>
+        <p style={{ fontSize: '15px', opacity: 0.9, lineHeight: '1.6' }}>
+          IntelliScaleSim supports two deployment methods: <strong>Docker Image</strong> (pull from Docker Hub) and <strong>GitHub Repository</strong> (build from source). Choose the method that best fits your project!
+        </p>
+      </div>
+
+      {/* Tab Navigation Buttons */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', borderBottom: '2px solid #e5e7eb', paddingBottom: '0', overflowX: 'auto' }}>
+        <button
+          onClick={() => setActiveTab('docker')}
+          style={{
+            padding: '16px 28px',
+            background: activeTab === 'docker' ? 'white' : 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'docker' ? '3px solid #3b82f6' : '3px solid transparent',
+            color: activeTab === 'docker' ? '#3b82f6' : '#6b7280',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            transition: 'all 0.3s ease',
+            borderRadius: '8px 8px 0 0',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <Package size={20} />
+          Docker Image
+        </button>
+        <button
+          onClick={() => setActiveTab('github')}
+          style={{
+            padding: '16px 28px',
+            background: activeTab === 'github' ? 'white' : 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'github' ? '3px solid #1f2937' : '3px solid transparent',
+            color: activeTab === 'github' ? '#1f2937' : '#6b7280',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            transition: 'all 0.3s ease',
+            borderRadius: '8px 8px 0 0',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <Github size={20} />
+          GitHub Repository
+        </button>
+        <button
+          onClick={() => setActiveTab('troubleshooting')}
+          style={{
+            padding: '16px 28px',
+            background: activeTab === 'troubleshooting' ? 'white' : 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'troubleshooting' ? '3px solid #f59e0b' : '3px solid transparent',
+            color: activeTab === 'troubleshooting' ? '#f59e0b' : '#6b7280',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            transition: 'all 0.3s ease',
+            borderRadius: '8px 8px 0 0',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <AlertTriangle size={20} />
+          Troubleshooting
+        </button>
+        <button
+          onClick={() => setActiveTab('best-practices')}
+          style={{
+            padding: '16px 28px',
+            background: activeTab === 'best-practices' ? 'white' : 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'best-practices' ? '3px solid #10b981' : '3px solid transparent',
+            color: activeTab === 'best-practices' ? '#10b981' : '#6b7280',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            transition: 'all 0.3s ease',
+            borderRadius: '8px 8px 0 0',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <Lightbulb size={20} />
+          Best Practices
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div>
+        {/* Docker Tab Content */}
+        {activeTab === 'docker' && (
+          <div style={{ background: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ padding: '16px', borderRadius: '12px', background: '#3b82f620', color: '#3b82f6' }}>
+                <Package size={32} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937' }}>Docker Image Deployment</h2>
+                <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>Deploy pre-built images from Docker Hub or create your own custom images</p>
+              </div>
+            </div>
+
+            {/* Create & Push Your Own Image Section - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#92400e' }}>
+                <Upload size={24} />
+                How to Create & Push Your Own Docker Image
+              </h3>
+              <p style={{ fontSize: '15px', marginBottom: '20px', color: '#78350f' }}>
+                Follow these steps to build your custom Docker image and push it to Docker Hub:
+              </p>
+              
+              <div style={{ background: 'white', padding: '20px', borderRadius: '8px', marginBottom: '16px', border: '2px solid #f59e0b' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#92400e' }}>Step 1: Create a Docker Hub Account</h4>
+                <p style={{ fontSize: '14px', marginBottom: '8px', color: '#78350f' }}>• Go to hub.docker.com and sign up for a free account</p>
+                <p style={{ fontSize: '14px', color: '#78350f' }}>• Remember your username - you'll need it for image naming</p>
+              </div>
+
+              <div style={{ background: 'white', padding: '20px', borderRadius: '8px', marginBottom: '16px', border: '2px solid #f59e0b' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#92400e' }}>Step 2: Login to Docker Hub</h4>
+                <CodeBlock 
+                  id="docker-login"
+                  code={`docker login
+# Enter your Docker Hub username and password`}
+                />
+              </div>
+
+              <div style={{ background: 'white', padding: '20px', borderRadius: '8px', marginBottom: '16px', border: '2px solid #f59e0b' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#92400e' }}>Step 3: Build Your Docker Image</h4>
+                <CodeBlock 
+                  id="docker-build"
+                  code={`# Navigate to your project directory containing Dockerfile
+cd /path/to/your/project
+
+# Build the image with proper naming: username/imagename:tag
+docker build -t yourusername/myapp:1.0 .
+
+# Example:
+docker build -t johnsmith/nodejs-app:1.0 .`}
+                />
+              </div>
+
+              <div style={{ background: 'white', padding: '20px', borderRadius: '8px', marginBottom: '16px', border: '2px solid #f59e0b' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#92400e' }}>Step 4: Test Your Image Locally</h4>
+                <CodeBlock 
+                  id="docker-test"
+                  code={`# Run your image locally to verify it works
+docker run -p 8080:3000 yourusername/myapp:1.0
+
+# Test at http://localhost:8080
+# Press Ctrl+C to stop`}
+                />
+              </div>
+
+              <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#92400e' }}>Step 5: Push to Docker Hub</h4>
+                <CodeBlock 
+                  id="docker-push"
+                  code={`# Push your image to Docker Hub
+docker push yourusername/myapp:1.0
+
+# Wait for upload to complete
+# Now you can deploy: yourusername/myapp:1.0`}
+                />
+              </div>
+            </div>
+
+            {/* Image Naming Convention - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#92400e' }}>
+                <Tag size={22} />
+                Understanding Docker Image Names
+              </h3>
+              <p style={{ fontSize: '15px', color: '#78350f', marginBottom: '20px' }}>
+                Docker image names follow a specific format. Understanding this is crucial for successful deployment:
+              </p>
+
+              <div style={{ display: 'grid', gap: '16px' }}>
+                <div style={{ background: 'white', padding: '16px', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>
+                    Official Images (from Docker)
+                  </h4>
+                  <code style={{ display: 'block', padding: '12px', background: '#1f2937', color: '#10b981', borderRadius: '6px', fontSize: '14px', marginBottom: '8px' }}>
+                    nginx:latest
+                  </code>
+                  <p style={{ fontSize: '13px', color: '#78350f' }}>
+                    Format: <strong>imagename:tag</strong><br/>
+                    Example: nginx:latest, python:3.11, node:18-alpine
+                  </p>
+                </div>
+
+                <div style={{ background: 'white', padding: '16px', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>
+                    User Images (your custom images) ⭐ Most Common
+                  </h4>
+                  <code style={{ display: 'block', padding: '12px', background: '#1f2937', color: '#10b981', borderRadius: '6px', fontSize: '14px', marginBottom: '8px' }}>
+                    username/myapp:1.0
+                  </code>
+                  <p style={{ fontSize: '13px', color: '#78350f' }}>
+                    Format: <strong>username/imagename:tag</strong><br/>
+                    Example: johnsmith/webapp:1.0, alice/api-server:latest<br/>
+                    <strong>This is what YOU will use when deploying your own projects!</strong>
+                  </p>
+                </div>
+
+                <div style={{ background: 'white', padding: '16px', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>
+                    Private Registry Images
+                  </h4>
+                  <code style={{ display: 'block', padding: '12px', background: '#1f2937', color: '#10b981', borderRadius: '6px', fontSize: '14px', marginBottom: '8px' }}>
+                    registry.example.com/username/myapp:1.0
+                  </code>
+                  <p style={{ fontSize: '13px', color: '#78350f' }}>
+                    Format: <strong>registry-url/username/imagename:tag</strong><br/>
+                    Used for private company registries (requires authentication)
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '16px', padding: '16px', background: '#fecaca', borderRadius: '8px', border: '2px solid #ef4444' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: 'bold', color: '#dc2626', marginBottom: '8px' }}>
+                  ⚠️ Common Mistakes to Avoid:
+                </h4>
+                <ul style={{ fontSize: '13px', color: '#991b1b', listStyle: 'disc', marginLeft: '20px', lineHeight: '1.8' }}>
+                  <li>❌ Using "myapp:1.0" without username → Won't be able to push to Docker Hub</li>
+                  <li>❌ Forgetting the tag → Defaults to "latest" but better to be explicit</li>
+                  <li>❌ Wrong username → Must match your Docker Hub username exactly</li>
+                  <li>✅ Always use: <strong>yourusername/imagename:version</strong></li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Step by Step - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#92400e', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Terminal size={20} />
+                Deploying Existing Docker Images - Step-by-Step
+              </h3>
+              <div style={{ display: 'grid', gap: '16px' }}>
+                {[
+                  { step: 1, title: 'Find Your Docker Image', desc: 'Search for images on Docker Hub or use your custom image from previous steps' },
+                  { step: 2, title: 'Copy Image Name', desc: 'Format: username/image:tag (e.g., johnsmith/myapp:1.0)' },
+                  { step: 3, title: 'Go to Deploy Page', desc: 'Navigate to the Deploy section and select "Docker Image" method' },
+                  { step: 4, title: 'Enter Details', desc: 'Provide: image name, container name, and port number' },
+                  { step: 5, title: 'Deploy!', desc: 'Click "Deploy Now" and monitor the deployment status' }
+                ].map((item) => (
+                  <div key={item.step} style={{ display: 'flex', gap: '16px', padding: '16px', background: 'white', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f59e0b', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>
+                      {item.step}
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '4px' }}>{item.title}</h4>
+                      <p style={{ fontSize: '14px', color: '#78350f' }}>{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Examples - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#92400e', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileCode size={18} />
+                Popular Pre-built Docker Images (Ready to Deploy)
+              </h3>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {[
+                  { name: 'nginx:latest', desc: 'High-performance web server - perfect for serving static content (port 80)', category: 'Web Server' },
+                  { name: 'node:18-alpine', desc: 'Node.js 18 runtime - lightweight Alpine-based image (port 3000)', category: 'Runtime' }
+                ].map((ex, i) => (
+                  <div key={i} style={{ padding: '14px 16px', background: 'white', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '2px solid #f59e0b' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <code style={{ color: '#92400e', fontWeight: 'bold', fontSize: '14px' }}>{ex.name}</code>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', background: '#fef3c7', color: '#92400e', borderRadius: '4px', fontWeight: 'bold', border: '1px solid #f59e0b' }}>{ex.category}</span>
+                      </div>
+                      <p style={{ fontSize: '12px', color: '#78350f' }}>{ex.desc}</p>
+                    </div>
+                    <button onClick={() => copyToClipboard(ex.name, ex.name)} style={{ padding: '6px 12px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', marginLeft: '12px' }}>
+                      {copiedText === ex.name ? '✓ Copied' : 'Copy'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Dockerfile Examples - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#92400e', marginBottom: '16px' }}>📄 Dockerfile Examples for Creating Custom Images</h3>
+              <p style={{ fontSize: '14px', color: '#78350f', marginBottom: '20px' }}>
+                Use these Dockerfile templates to build your own Docker images:
+              </p>
+              
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>1. Node.js Application</h4>
+                <p style={{ fontSize: '14px', color: '#78350f', marginBottom: '8px' }}>For Express.js, React, or any Node.js based application:</p>
+                <CodeBlock 
+                  id="dockerfile-node"
+                  code={`FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD ["npm", "start"]`}
+                />
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>2. Python Flask/Django Application</h4>
+                <p style={{ fontSize: '14px', color: '#78350f', marginBottom: '8px' }}>For Flask, Django, or FastAPI applications:</p>
+                <CodeBlock 
+                  id="dockerfile-python"
+                  code={`FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["python", "app.py"]`}
+                />
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>3. Java Spring Boot Application</h4>
+                <p style={{ fontSize: '14px', color: '#78350f', marginBottom: '8px' }}>For Spring Boot or any Java application (multi-stage build):</p>
+                <CodeBlock 
+                  id="dockerfile-java"
+                  code={`FROM maven:3.8-openjdk-17 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+FROM openjdk:17-slim
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+EXPOSE 8080
+CMD ["java", "-jar", "app.jar"]`}
+                />
+              </div>
+            </div>
+
+            {/* Prerequisites - YELLOW/BEIGE */}
+            <div style={{ padding: '20px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '12px' }}>✅ Prerequisites Checklist</h4>
+              <div style={{ display: 'grid', gap: '8px' }}>
+                {[
+                  'Image must support linux/amd64 platform',
+                  'All required ports must be documented',
+                  'Image size should be under 5GB',
+                  'For private images: registry credentials required',
+                  'Container must expose at least one port',
+                  'For custom images: must be pushed to Docker Hub first'
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#92400e' }}>
+                    <CheckCircle size={16} />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* GitHub Tab Content - ALL YELLOW/BEIGE */}
+        {activeTab === 'github' && (
+          <div style={{ background: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ padding: '16px', borderRadius: '12px', background: '#1f293720', color: '#1f2937' }}>
+                <Github size={32} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1f2937' }}>GitHub Repository Deployment</h2>
+                <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>Build and deploy directly from your GitHub source code</p>
+              </div>
+            </div>
+
+            {/* Repository Preparation Checklist - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#92400e' }}>
+                <CheckCircle size={24} />
+                Repository Preparation Checklist
+              </h3>
+              <p style={{ fontSize: '15px', marginBottom: '20px', color: '#78350f' }}>
+                Before deploying, make sure your repository contains these essential files:
+              </p>
+              
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {[
+                  { item: 'Dockerfile in repository root', desc: 'Must be named exactly "Dockerfile" (capital D)' },
+                  { item: '.dockerignore file', desc: 'Exclude unnecessary files from Docker build' },
+                  { item: 'Dependency files', desc: 'package.json (Node.js), requirements.txt (Python), pom.xml (Java)' },
+                  { item: 'README.md', desc: 'Document deployment instructions and port information' },
+                  { item: 'Repository visibility', desc: 'Must be public OR provide access token for private repos' }
+                ].map((check, i) => (
+                  <div key={i} style={{ background: 'white', padding: '14px', borderRadius: '8px', display: 'flex', gap: '12px', alignItems: 'start', border: '2px solid #f59e0b' }}>
+                    <CheckCircle size={20} style={{ flexShrink: 0, marginTop: '2px', color: '#f59e0b' }} />
+                    <div>
+                      <p style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '4px', color: '#92400e' }}>{check.item}</p>
+                      <p style={{ fontSize: '13px', color: '#78350f' }}>{check.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* How to Get Correct GitHub URL - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#92400e' }}>
+                <Link size={22} />
+                How to Get the Correct GitHub URL
+              </h3>
+              <p style={{ fontSize: '15px', color: '#78350f', marginBottom: '20px' }}>
+                Using the correct URL format is critical. Here's what to use:
+              </p>
+
+              <div style={{ background: 'white', padding: '16px', borderRadius: '8px', marginBottom: '12px', border: '2px solid #10b981' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <CheckCircle size={20} style={{ color: '#10b981' }} />
+                  <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#047857' }}>✅ CORRECT Format (HTTPS)</h4>
+                </div>
+                <code style={{ display: 'block', padding: '12px', background: '#1f2937', color: '#10b981', borderRadius: '6px', fontSize: '14px' }}>
+                  https://github.com/username/repository
+                </code>
+                <p style={{ fontSize: '13px', color: '#065f46', marginTop: '8px' }}>
+                  Example: https://github.com/johnsmith/my-web-app
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', borderRadius: '8px', marginBottom: '12px', border: '2px solid #ef4444' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <AlertTriangle size={20} style={{ color: '#ef4444' }} />
+                  <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#dc2626' }}>❌ WRONG Format (SSH)</h4>
+                </div>
+                <code style={{ display: 'block', padding: '12px', background: '#1f2937', color: '#ef4444', borderRadius: '6px', fontSize: '14px' }}>
+                  git@github.com:username/repository.git
+                </code>
+                <p style={{ fontSize: '13px', color: '#991b1b', marginTop: '8px' }}>
+                  This will NOT work! Don't use SSH format.
+                </p>
+              </div>
+
+              <div style={{ background: 'white', padding: '16px', borderRadius: '8px', border: '2px solid #ef4444' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <AlertTriangle size={20} style={{ color: '#ef4444' }} />
+                  <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#dc2626' }}>❌ WRONG (Web URL with branch)</h4>
+                </div>
+                <code style={{ display: 'block', padding: '12px', background: '#1f2937', color: '#ef4444', borderRadius: '6px', fontSize: '14px' }}>
+                  https://github.com/username/repository/tree/main
+                </code>
+                <p style={{ fontSize: '13px', color: '#991b1b', marginTop: '8px' }}>
+                  Don't copy from browser address bar! Remove /tree/main part.
+                </p>
+              </div>
+
+              <div style={{ marginTop: '16px', padding: '14px', background: 'white', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>💡 Pro Tip:</h4>
+                <p style={{ fontSize: '13px', color: '#78350f' }}>
+                  On your GitHub repository page, click the green "Code" button and copy the HTTPS URL (not SSH!).
+                </p>
+              </div>
+            </div>
+
+            {/* Repository Structure Example - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px', color: '#92400e' }}>
+                <FolderTree size={22} />
+                Ideal Repository Structure
+              </h3>
+              <p style={{ fontSize: '15px', color: '#78350f', marginBottom: '16px' }}>
+                Your repository should be organized like this for successful deployment:
+              </p>
+
+              <CodeBlock 
+                id="repo-structure"
+                code={`my-nodejs-app/
+├── Dockerfile              ← Must be in root!
+├── .dockerignore           ← Exclude unnecessary files
+├── README.md               ← Document your app
+├── package.json            ← Dependencies
+├── package-lock.json
+└── src/
+    ├── index.js            ← Your application code
+    ├── routes/
+    └── controllers/`}
+              />
+
+              <div style={{ marginTop: '16px', padding: '16px', background: 'white', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>📋 Key Points:</h4>
+                <ul style={{ fontSize: '13px', color: '#78350f', listStyle: 'disc', marginLeft: '20px', lineHeight: '1.8' }}>
+                  <li><strong>Dockerfile</strong> must be in repository root (not in subfolder)</li>
+                  <li><strong>.dockerignore</strong> helps reduce image size and build time</li>
+                  <li><strong>Dependency files</strong> (package.json, requirements.txt) must be present</li>
+                  <li><strong>Source code</strong> can be in src/ or any folder (specified in Dockerfile)</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* .dockerignore File Guide - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#92400e', marginBottom: '16px' }}>📄 .dockerignore File Example</h3>
+              <p style={{ fontSize: '14px', color: '#78350f', marginBottom: '12px' }}>
+                Create a <code style={{ background: 'white', padding: '2px 6px', borderRadius: '4px', border: '1px solid #f59e0b' }}>.dockerignore</code> file in your repository root to exclude these files from Docker build:
+              </p>
+
+              <CodeBlock 
+                id="dockerignore"
+                code={`# Dependencies
+node_modules/
+venv/
+__pycache__/
+
+# Git files
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+
+# Build outputs
+dist/
+build/
+target/`}
+              />
+
+              <div style={{ marginTop: '12px', padding: '14px', background: 'white', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#92400e', marginBottom: '6px' }}>💡 Why .dockerignore?</h4>
+                <p style={{ fontSize: '13px', color: '#78350f' }}>
+                  Excluding these files makes your Docker image smaller and builds faster. node_modules alone can be hundreds of MBs!
+                </p>
+              </div>
+            </div>
+
+            {/* Step by Step - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#92400e', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Terminal size={20} />
+                Step-by-Step Deployment Guide
+              </h3>
+              <div style={{ display: 'grid', gap: '16px' }}>
+                {[
+                  { step: 1, title: 'Prepare Your Repository', desc: 'Ensure Dockerfile, .dockerignore, and all dependencies are in place' },
+                  { step: 2, title: 'Make Repository Public', desc: 'Go to Settings → Change visibility (or setup access token for private)' },
+                  { step: 3, title: 'Copy Repository URL', desc: 'Use HTTPS format: https://github.com/username/repo' },
+                  { step: 4, title: 'Go to Deploy Page', desc: 'Navigate to Deploy section and select "GitHub Repository"' },
+                  { step: 5, title: 'Enter Details', desc: 'Paste GitHub URL, provide container name, and specify port' },
+                  { step: 6, title: 'Deploy!', desc: 'System will clone, build, and deploy automatically (takes 2-5 minutes)' }
+                ].map((item) => (
+                  <div key={item.step} style={{ display: 'flex', gap: '16px', padding: '16px', background: 'white', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f59e0b', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>
+                      {item.step}
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '4px' }}>{item.title}</h4>
+                      <p style={{ fontSize: '14px', color: '#78350f' }}>{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ONE Example Repository - YELLOW/BEIGE */}
+            <div style={{ marginBottom: '32px', padding: '24px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#92400e', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileCode size={18} />
+                Example GitHub Repository (Ready to Deploy)
+              </h3>
+              <div style={{ padding: '16px', background: 'white', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <code style={{ color: '#92400e', fontSize: '13px', wordBreak: 'break-all' }}>https://github.com/docker/getting-started</code>
+                  <p style={{ fontSize: '12px', color: '#78350f', marginTop: '6px' }}>
+                    Docker official tutorial app • Node.js application • Port: 3000
+                  </p>
+                </div>
+                <button 
+                  onClick={() => copyToClipboard('https://github.com/docker/getting-started', 'github-example')} 
+                  style={{ padding: '6px 12px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', width: '100%' }}
+                >
+                  {copiedText === 'github-example' ? '✓ Copied URL' : 'Copy URL'}
+                </button>
+              </div>
+            </div>
+
+            {/* Prerequisites - YELLOW/BEIGE */}
+            <div style={{ padding: '20px', background: '#fef3c7', borderRadius: '12px', border: '2px solid #f59e0b' }}>
+              <h4 style={{ fontSize: '16px', fontWeight: 'bold', color: '#92400e', marginBottom: '12px' }}>✅ Prerequisites Checklist</h4>
+              <div style={{ display: 'grid', gap: '8px' }}>
+                {[
+                  'Repository must contain a valid Dockerfile in root directory',
+                  'Dockerfile must specify FROM --platform=linux/amd64',
+                  'All dependencies listed in package files (package.json, requirements.txt, etc.)',
+                  'Repository must be public OR provide access token for private repos',
+                  'Build should complete within 10 minutes',
+                  'Include .dockerignore to optimize build time and image size'
+                ].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#92400e' }}>
+                    <CheckCircle size={16} />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Troubleshooting Tab */}
+        {activeTab === 'troubleshooting' && (
+          <div style={{ background: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <AlertTriangle size={32} style={{ color: '#f59e0b' }} />
+              <h3 style={{ fontSize: '28px', fontWeight: 'bold', color: '#92400e' }}>Troubleshooting Guide</h3>
+            </div>
+            
+            <div style={{ marginBottom: '32px' }}>
+              <h4 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Package size={20} style={{ color: '#3b82f6' }} />
+                Docker Image Issues
+              </h4>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {[
+                  { issue: 'Image not found', solution: 'Verify image name spelling and tag. Check if image exists on Docker Hub. Try searching on hub.docker.com first.' },
+                  { issue: 'Port already in use', solution: 'Choose a different port or stop the conflicting container. Use "docker ps" to see which containers are using ports.' },
+                  { issue: 'Container exits immediately', solution: 'Check if the image has a proper ENTRYPOINT or CMD. Some images need environment variables. View logs with "docker logs <container>".' },
+                  { issue: 'Permission denied', solution: 'Ensure proper registry authentication for private images. Run "docker login" with your credentials.' },
+                  { issue: 'Pull timeout or slow download', solution: 'Check your internet connection. Try using Alpine-based images which are smaller. Consider using a mirror registry.' },
+                  { issue: 'Platform mismatch error', solution: 'Your image might be built for ARM. Ensure the image supports linux/amd64 platform. Look for "amd64" tag.' },
+                  { issue: 'Cannot push to Docker Hub', solution: 'Make sure you are logged in with "docker login". Verify image is named correctly as username/imagename:tag.' }
+                ].map((item, i) => (
+                  <div key={i} style={{ background: '#fef3c7', padding: '16px', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                    <p style={{ fontSize: '15px', fontWeight: 'bold', color: '#92400e', marginBottom: '6px' }}>❌ {item.issue}</p>
+                    <p style={{ fontSize: '14px', color: '#78350f', lineHeight: '1.5' }}>💡 {item.solution}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f2937', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Github size={20} style={{ color: '#1f2937' }} />
+                GitHub Repository Issues
+              </h4>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                {[
+                  { issue: 'Repository not found', solution: 'Check URL spelling. Ensure repository is public or provide valid access token. Verify you have read access to the repo.' },
+                  { issue: 'Build failed', solution: 'Check Dockerfile syntax. Verify all dependencies are correctly specified. Review build logs for specific error messages.' },
+                  { issue: 'Dockerfile not found', solution: 'Dockerfile must be in repository root with exact name "Dockerfile" (capital D). Check file is committed to the repo.' },
+                  { issue: 'Build timeout', solution: 'Optimize your build. Use smaller base images and multi-stage builds. Add .dockerignore to exclude node_modules and other large folders.' },
+                  { issue: 'Port mismatch', solution: 'EXPOSE port in Dockerfile must match the port you specify during deployment. Check your application listens on the correct port.' },
+                  { issue: 'Dependency installation fails', solution: 'Verify package.json, requirements.txt, or pom.xml exists in repository root. Check for typos in dependency names.' },
+                  { issue: 'Wrong GitHub URL format', solution: 'Use HTTPS format: https://github.com/username/repo. Do NOT use SSH format or URLs with /tree/main.' }
+                ].map((item, i) => (
+                  <div key={i} style={{ background: '#fef3c7', padding: '16px', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                    <p style={{ fontSize: '15px', fontWeight: 'bold', color: '#92400e', marginBottom: '6px' }}>❌ {item.issue}</p>
+                    <p style={{ fontSize: '14px', color: '#78350f', lineHeight: '1.5' }}>💡 {item.solution}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Best Practices Tab */}
+        {activeTab === 'best-practices' && (
+          <div style={{ background: 'white', padding: '32px', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <Lightbulb size={32} style={{ color: '#10b981' }} />
+              <h3 style={{ fontSize: '28px', fontWeight: 'bold', color: '#047857' }}>Best Practices for Successful Deployment</h3>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+              {[
+                { title: 'Use Alpine Images', tip: 'Choose Alpine-based images (e.g., node:18-alpine) for smaller size and faster deployments' },
+                { title: 'Document Your Ports', tip: 'Always document which ports your application uses in README and Dockerfile' },
+                { title: 'Test Locally First', tip: 'Run "docker build" and "docker run" locally before deploying to the platform' },
+                { title: 'Environment Variables', tip: 'Use environment variables for configuration instead of hardcoding values' },
+                { title: 'Health Checks', tip: 'Implement health check endpoints (e.g., /health) for monitoring' },
+                { title: 'Resource Limits', tip: 'Be mindful of memory and CPU usage. Optimize your application for efficiency' }
+              ].map((bp, i) => (
+                <div key={i} style={{ padding: '16px', background: '#fef3c7', borderRadius: '8px', border: '2px solid #f59e0b' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: 'bold', color: '#92400e', marginBottom: '6px' }}>💡 {bp.title}</h4>
+                  <p style={{ fontSize: '13px', color: '#78350f', lineHeight: '1.5' }}>{bp.tip}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default DocumentationPage;

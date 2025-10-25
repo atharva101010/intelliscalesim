@@ -1,0 +1,277 @@
+import React, { useState, useEffect } from 'react';
+import { DollarSign } from 'lucide-react';
+
+const ScenarioBilling = () => {
+  const [containers, setContainers] = useState([]);
+  const [selectedContainer, setSelectedContainer] = useState('');
+  const [provider, setProvider] = useState('AWS');
+  const [cpuCores, setCpuCores] = useState(2);
+  const [memory, setMemory] = useState(4);
+  const [storage, setStorage] = useState(10);
+  const [duration, setDuration] = useState(24);
+  const [costData, setCostData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchContainers();
+  }, []);
+
+  const fetchContainers = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/containers');
+      const data = await response.json();
+      setContainers(data.containers || []);
+      if (data.containers && data.containers.length > 0) {
+        setSelectedContainer(data.containers[0].container_name);
+      }
+    } catch (error) {
+      console.error('Error fetching containers:', error);
+    }
+  };
+
+  const calculateCost = async () => {
+    if (!selectedContainer) {
+      alert('Please select a container');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/calculate_scenario', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider,
+          cpu_cores: cpuCores,
+          memory_gb: memory,
+          storage_gb: storage,
+          duration_hours: duration,
+        }),
+      });
+
+      const data = await response.json();
+      setCostData(data);
+    } catch (error) {
+      console.error('Error calculating cost:', error);
+      alert('Failed to calculate cost');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value) => {
+    return `$${typeof value === 'number' ? value.toFixed(4) : '0.0000'}`;
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+      {/* Left Column - Configuration */}
+      <div className="lg:col-span-2 space-y-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span className="text-orange-500">⚙️</span> Scenario Configuration
+          </h3>
+
+          <div className="space-y-6">
+            {/* Application Selection - Yellow */}
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Target Application <span className="text-gray-500">(deployed containers)</span>
+              </label>
+              <select
+                value={selectedContainer}
+                onChange={(e) => setSelectedContainer(e.target.value)}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select application...</option>
+                {containers.map((container) => (
+                  <option key={container.container_id} value={container.container_name}>
+                    {container.container_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Provider Selection - Blue */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Cloud Provider
+              </label>
+              <select
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="AWS">AWS</option>
+                <option value="Azure">Azure</option>
+                <option value="GCP">GCP</option>
+              </select>
+            </div>
+
+            {/* Resource Configuration Grid - Purple */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* CPU Cores */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  CPU Cores <span className="text-orange-500">(Max: 16)</span>
+                </label>
+                <input
+                  type="number"
+                  value={cpuCores}
+                  onChange={(e) => setCpuCores(Math.max(1, Math.min(16, Number(e.target.value))))}
+                  min="1"
+                  max="16"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Memory */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Memory (GB) <span className="text-orange-500">(Max: 64)</span>
+                </label>
+                <input
+                  type="number"
+                  value={memory}
+                  onChange={(e) => setMemory(Math.max(1, Math.min(64, Number(e.target.value))))}
+                  min="1"
+                  max="64"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Storage */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Storage (GB) <span className="text-orange-500">(Max: 500)</span>
+                </label>
+                <input
+                  type="number"
+                  value={storage}
+                  onChange={(e) => setStorage(Math.max(1, Math.min(500, Number(e.target.value))))}
+                  min="1"
+                  max="500"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Duration */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Duration (hours) <span className="text-orange-500">(Max: 720)</span>
+                </label>
+                <input
+                  type="number"
+                  value={duration}
+                  onChange={(e) => setDuration(Math.max(1, Math.min(720, Number(e.target.value))))}
+                  min="1"
+                  max="720"
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Calculate Button */}
+            <button
+              onClick={calculateCost}
+              disabled={loading || !selectedContainer}
+              className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Calculating...
+                </>
+              ) : (
+                <>
+                  <DollarSign className="w-5 h-5" />
+                  Calculate Cost
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column - Cost Breakdown */}
+      <div className="lg:col-span-1">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sticky top-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <DollarSign className="text-orange-500 w-5 h-5" />
+            Cost Breakdown
+          </h3>
+
+          {costData ? (
+            <div className="space-y-4">
+              {/* Individual Costs */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <p className="text-gray-900 dark:text-white font-medium">CPU Cost</p>
+                    <p className="text-sm text-gray-500">{cpuCores} cores × {duration} hours</p>
+                  </div>
+                  <p className="text-lg font-bold text-blue-600">{formatCurrency(costData.cpu_cost)}</p>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <p className="text-gray-900 dark:text-white font-medium">Memory Cost</p>
+                    <p className="text-sm text-gray-500">{memory} GB × {duration} hours</p>
+                  </div>
+                  <p className="text-lg font-bold text-green-600">{formatCurrency(costData.memory_cost)}</p>
+                </div>
+
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <div>
+                    <p className="text-gray-900 dark:text-white font-medium">Storage Cost</p>
+                    <p className="text-sm text-gray-500">{storage} GB × {duration} hours</p>
+                  </div>
+                  <p className="text-lg font-bold text-purple-600">{formatCurrency(costData.storage_cost)}</p>
+                </div>
+              </div>
+
+              {/* Total Cost */}
+              <div className="bg-gradient-to-r from-orange-500 to-pink-500 rounded-lg p-4 mt-6">
+                <p className="text-white text-sm mb-1">Total Estimated Cost</p>
+                <p className="text-white text-3xl font-bold">{formatCurrency(costData.total_cost)}</p>
+              </div>
+
+              {/* Statistics */}
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Statistics</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Provider</span>
+                    <span className="font-semibold">{provider}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Duration</span>
+                    <span className="font-semibold">{duration} hours</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Container</span>
+                    <span className="font-semibold">{selectedContainer || 'None'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <DollarSign className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+              <p className="text-gray-500 dark:text-gray-400">
+                Configure resources and calculate to see cost estimate
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ScenarioBilling;

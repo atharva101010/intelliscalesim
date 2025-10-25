@@ -1,0 +1,133 @@
+import api from './api';
+
+export const authService = {
+  // Login user
+  async login(email, password) {
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      
+      // Backend returns access_token, not token
+      if (response.access_token) {
+        localStorage.setItem('token', response.access_token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      
+      return {
+        success: true,
+        token: response.access_token,
+        user: response.user
+      };
+    } catch (error) {
+      console.error('Login error:', error);
+      return {
+        success: false,
+        message: error.message || 'Login failed'
+      };
+    }
+  },
+
+  // Register user
+  async register(userData) {
+    try {
+      const response = await api.post('/auth/register', userData);
+      
+      // Backend returns access_token, not token
+      if (response.access_token) {
+        localStorage.setItem('token', response.access_token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Register error:', error);
+      throw error;
+    }
+  },
+
+  // Logout user
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  },
+
+  // Get current user
+  getCurrentUser() {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+  },
+
+  // Check if user is authenticated
+  isAuthenticated() {
+    return !!localStorage.getItem('token');
+  }
+};
+
+// Registration
+async register(userData) {
+  const response = await fetch(`${this.API_URL}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.detail || 'Registration failed');
+  
+  // Store auth token if returned
+  if (data.token) {
+    localStorage.setItem('authToken', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+  }
+  
+  return data;
+}
+
+  // Password Reset
+  async requestPasswordReset(email) {
+    const response = await fetch(`${this.API_URL}/auth/password-reset/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    return await response.json();
+  }
+
+  async verifyResetToken(token) {
+    const response = await fetch(`${this.API_URL}/auth/password-reset/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+    return await response.json();
+  }
+
+  async confirmPasswordReset(token, password) {
+    const response = await fetch(`${this.API_URL}/auth/password-reset/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password })
+    });
+    return await response.json();
+  }
+
+  // Email Verification
+  async sendVerificationCode(email) {
+    const response = await fetch(`${this.API_URL}/auth/verify-email/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    return await response.json();
+  }
+
+  async confirmEmailVerification(email, code) {
+    const response = await fetch(`${this.API_URL}/auth/verify-email/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code })
+    });
+    return await response.json();
+  }
+}
+
+export default new AuthService();

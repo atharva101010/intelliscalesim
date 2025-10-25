@@ -1,0 +1,72 @@
+from fastapi import APIRouter, Body
+from pydantic import BaseModel
+from typing import Optional, Dict
+from services.deployment_service import deployment_service
+
+router = APIRouter(prefix="/api/deployment", tags=["deployment"])
+
+class DockerDeployment(BaseModel):
+    imageName: str
+    containerName: str
+    port: Optional[int] = None
+    userId: Optional[str] = "student"
+    userName: Optional[str] = "Student"
+    envVars: Optional[Dict[str, str]] = None
+
+class GitHubDeployment(BaseModel):
+    repoUrl: str
+    containerName: str
+    port: Optional[int] = None
+    userId: Optional[str] = "student"
+    userName: Optional[str] = "Student"
+    dockerfilePath: Optional[str] = "Dockerfile"
+
+@router.post("/docker")
+async def deploy_docker_image(deployment: DockerDeployment):
+    """Deploy a Docker image from Docker Hub"""
+    result = deployment_service.deploy_docker_image(
+        image_name=deployment.imageName,
+        container_name=deployment.containerName,
+        port=deployment.port,
+        user_id=deployment.userId,
+        user_name=deployment.userName,
+        env_vars=deployment.envVars
+    )
+    return result
+
+@router.post("/github")
+async def deploy_from_github(deployment: GitHubDeployment):
+    """Deploy from GitHub repository"""
+    result = deployment_service.deploy_from_github(
+        repo_url=deployment.repoUrl,
+        container_name=deployment.containerName,
+        port=deployment.port,
+        user_id=deployment.userId,
+        user_name=deployment.userName,
+        dockerfile_path=deployment.dockerfilePath
+    )
+    return result
+
+@router.post("/stop/{container_id}")
+async def stop_container(container_id: str):
+    """Stop a running container"""
+    result = deployment_service.stop_container(container_id)
+    return result
+
+@router.delete("/remove/{container_id}")
+async def remove_container(container_id: str, force: bool = False):
+    """Remove a container"""
+    result = deployment_service.remove_container(container_id, force)
+    return result
+
+@router.get("/history")
+async def get_deployment_history(limit: int = 50):
+    """Get deployment history"""
+    history = deployment_service.get_deployment_history(limit)
+    return {"success": True, "data": history}
+
+@router.get("/available-port")
+async def get_available_port():
+    """Get an available port"""
+    port = deployment_service.find_available_port()
+    return {"success": True, "data": {"port": port}}

@@ -1,0 +1,221 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from routers import deployment, metrics, autoscaling
+from database import init_database, close_database
+from contextlib import asynccontextmanager
+import uvicorn
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("🚀 Starting IntelliScaleSim API...")
+    init_database()
+    print("✅ Server ready!")
+    yield
+    # Shutdown
+    print("🔌 Shutting down IntelliScaleSim API...")
+    close_database()
+    print("✅ Shutdown complete")
+
+app = FastAPI(
+    title="IntelliScaleSim API", 
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(deployment.router)
+app.include_router(metrics.router)
+app.include_router(autoscaling.router)
+
+# Health check
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "IntelliScaleSim API", "database": "connected"}
+
+@app.get("/")
+async def root():
+    return {
+        "message": "IntelliScaleSim API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+# ============================================
+# LOAD TESTING ROUTES
+# ============================================
+from load_tester import (
+    LoadTestRequest, 
+    LoadTestResult, 
+    start_load_test, 
+    get_test_result,
+    get_all_tests
+)
+
+@app.post("/api/load-test/start")
+async def start_new_load_test(request: LoadTestRequest):
+    """Start a new load test"""
+    try:
+        test_id = start_load_test(request)
+        return {
+            "status": "success",
+            "test_id": test_id,
+            "message": "Load test started successfully"
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start load test: {str(e)}")
+
+@app.get("/api/load-test/{test_id}")
+async def get_load_test_result(test_id: str):
+    """Get load test result by ID"""
+    result = get_test_result(test_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Test not found")
+    return result
+
+@app.get("/api/load-test/history/all")
+async def get_all_load_tests():
+    """Get all load test results"""
+    return get_all_tests()
+
+@app.delete("/api/load-test/{test_id}")
+async def delete_load_test(test_id: str):
+    """Delete a test result"""
+    from load_tester import test_results
+    if test_id in test_results:
+        del test_results[test_id]
+        return {"status": "success", "message": "Test deleted"}
+    raise HTTPException(status_code=404, detail="Test not found")
+
+
+# Load Testing with Database
+from models.load_test import LoadTest
+import load_tester
+
+@app.post("/api/load-test/start")
+async def start_load_test(
+    request: load_tester.LoadTestRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Start a new load test and save to database"""
+    try:
+        # Start the load test
+        test_id = load_tester.start_load_test(request)
+        
+        # Save to database
+        db_test = LoadTest(
+            test_id=test_id,
+            user_id=current_user.id,
+            target_url=request.target_url,
+            total_requests=request.total_requests,
+            concurrency=request.concurrency,
+            duration_seconds=request.duration_seconds,
+            method=request.method,
+            status='running',
+            progress=0.0
+        )
+        db.add(db_test)
+        db.commit()
+        db.refresh(db_test)
+        
+        return {"test_id": test_id, "message": "Load test started successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/load-test/{test_id}")
+async def get_load_test_result(
+    test_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get real-time load test result"""
+    # Get from memory (real-time)
+    result = load_tester.get_test_result(test_id)
+    
+    if not result:
+        # Try to get from database
+        db_test = db.query(LoadTest).filter(
+            LoadTest.test_id == test_id,
+            LoadTest.user_id == current_user.id
+        ).first()
+        
+        if not db_test:
+            raise HTTPException(status_code=404, detail="Test not found")
+        
+        return db_test
+    
+    # Update database with latest results
+    db_test = db.query(LoadTest).filter(LoadTest.test_id == test_id).first()
+    if db_test:
+        db_test.status = result.status
+        db_test.progress = result.progress
+        db_test.completed_requests = result.completed_requests
+        db_test.failed_requests = result.failed_requests
+        db_test.avg_response_time = result.avg_response_time
+        db_test.min_response_time = result.min_response_time
+        db_test.max_response_time = result.max_response_time
+        db_test.requests_per_second = result.requests_per_second
+        db_test.actual_duration = result.actual_duration
+        db_test.cpu_usage = result.cpu_usage
+        db_test.memory_usage = result.memory_usage
+        
+        if result.status == 'completed':
+            from datetime import datetime
+            db_test.completed_at = datetime.fromisoformat(result.completed_at) if result.completed_at else None
+        
+        db.commit()
+    
+    return result
+
+@app.get("/api/load-test/history/all")
+async def get_all_load_tests(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 100
+):
+    """Get all load tests for current user from database"""
+    tests = db.query(LoadTest).filter(
+        LoadTest.user_id == current_user.id
+    ).order_by(LoadTest.created_at.desc()).offset(skip).limit(limit).all()
+    
+    return tests
+
+@app.delete("/api/load-test/{test_id}")
+async def delete_load_test(
+    test_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a load test"""
+    db_test = db.query(LoadTest).filter(
+        LoadTest.test_id == test_id,
+        LoadTest.user_id == current_user.id
+    ).first()
+    
+    if not db_test:
+        raise HTTPException(status_code=404, detail="Test not found")
+    
+    db.delete(db_test)
+    db.commit()
+    
+    # Also remove from memory if exists
+    load_tester.delete_test(test_id)
+    
+    return {"message": "Test deleted successfully"}

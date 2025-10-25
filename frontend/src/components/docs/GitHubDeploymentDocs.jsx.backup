@@ -1,0 +1,381 @@
+import { BookOpen, CheckCircle, AlertCircle, Code, FileText, Info, Container as ContainerIcon } from 'lucide-react';
+import { useState } from 'react';
+
+const GitHubDeploymentDocs = () => {
+  const [activeTab, setActiveTab] = useState('overview');
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+        <BookOpen style={{ width: '2.5rem', height: '2.5rem', color: '#8b5cf6' }} />
+        <div>
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.25rem' }}>
+            Deployment Guide
+          </h1>
+          <p style={{ color: '#6b7280' }}>
+            Complete guide for deploying applications via Docker Hub and GitHub
+          </p>
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', borderBottom: '2px solid #e5e7eb', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setActiveTab('overview')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: 'transparent',
+            borderBottom: activeTab === 'overview' ? '3px solid #8b5cf6' : 'none',
+            color: activeTab === 'overview' ? '#8b5cf6' : '#6b7280',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('docker')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: 'transparent',
+            borderBottom: activeTab === 'docker' ? '3px solid #8b5cf6' : 'none',
+            color: activeTab === 'docker' ? '#8b5cf6' : '#6b7280',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Docker Hub
+        </button>
+        <button
+          onClick={() => setActiveTab('github')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: 'transparent',
+            borderBottom: activeTab === 'github' ? '3px solid #8b5cf6' : 'none',
+            color: activeTab === 'github' ? '#8b5cf6' : '#6b7280',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          GitHub
+        </button>
+        <button
+          onClick={() => setActiveTab('examples')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: 'transparent',
+            borderBottom: activeTab === 'examples' ? '3px solid #8b5cf6' : 'none',
+            color: activeTab === 'examples' ? '#8b5cf6' : '#6b7280',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Examples
+        </button>
+        <button
+          onClick={() => setActiveTab('troubleshooting')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            background: 'transparent',
+            borderBottom: activeTab === 'troubleshooting' ? '3px solid #8b5cf6' : 'none',
+            color: activeTab === 'troubleshooting' ? '#8b5cf6' : '#6b7280',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          Troubleshooting
+        </button>
+      </div>
+
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <div>
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1rem' }}>
+              Two Ways to Deploy
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+              <div style={{ padding: '1.5rem', background: '#f5f3ff', borderRadius: '0.5rem', border: '2px solid #8b5cf6' }}>
+                <ContainerIcon style={{ color: '#8b5cf6', marginBottom: '1rem' }} size={48} />
+                <h4 style={{ fontWeight: '600', color: '#4c1d95', marginBottom: '0.5rem' }}>Docker Hub</h4>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+                  Deploy pre-built Docker images from Docker Hub or private registries
+                </p>
+                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                  <strong>Best for:</strong>
+                  <ul style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+                    <li>Pre-built images</li>
+                    <li>Quick deployments</li>
+                    <li>Testing existing containers</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div style={{ padding: '1.5rem', background: '#dbeafe', borderRadius: '0.5rem', border: '2px solid #3b82f6' }}>
+                <Code style={{ color: '#3b82f6', marginBottom: '1rem' }} size={48} />
+                <h4 style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.5rem' }}>GitHub Repository</h4>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+                  Build and deploy directly from your GitHub source code
+                </p>
+                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                  <strong>Best for:</strong>
+                  <ul style={{ marginLeft: '1rem', marginTop: '0.5rem' }}>
+                    <li>Custom applications</li>
+                    <li>Source code projects</li>
+                    <li>Automatic builds</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '0.5rem' }}>
+              <p style={{ fontSize: '0.875rem', color: '#92400e' }}>
+                <strong>💡 Tip:</strong> Choose Docker Hub for quick deployments of existing images, or GitHub for building from source code with automatic CI/CD.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Docker Hub Tab */}
+      {activeTab === 'docker' && (
+        <div>
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1rem' }}>
+              Docker Hub Deployment
+            </h3>
+
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f5f3ff', borderRadius: '0.5rem' }}>
+              <h4 style={{ fontWeight: '600', color: '#6b21a8', marginBottom: '0.75rem' }}>What You Need</h4>
+              <ul style={{ fontSize: '0.875rem', color: '#6b7280', marginLeft: '1.5rem', listStyle: 'disc' }}>
+                <li style={{ marginBottom: '0.5rem' }}><strong>Docker Image Name:</strong> Full image name (e.g., nginx:latest, username/app:v1.0)</li>
+                <li style={{ marginBottom: '0.5rem' }}><strong>Port Number:</strong> The port your application listens on</li>
+                <li><strong>Optional:</strong> Container name (auto-generated if not provided)</li>
+              </ul>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#dbeafe', borderRadius: '0.5rem' }}>
+              <h4 style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.75rem' }}>Public Images</h4>
+              <p style={{ fontSize: '0.875rem', color: '#1e3a8a', marginBottom: '0.5rem' }}>
+                Deploy public images from Docker Hub without authentication:
+              </p>
+              <div style={{ background: '#1e293b', color: '#e2e8f0', padding: '0.75rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontFamily: 'monospace' }}>
+                {`nginx:latest
+redis:alpine
+postgres:14
+node:18-alpine`}
+              </div>
+            </div>
+
+            <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '0.5rem' }}>
+              <h4 style={{ fontWeight: '600', color: '#92400e', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={20} />
+                Private Images
+              </h4>
+              <p style={{ fontSize: '0.875rem', color: '#92400e', marginBottom: '0.75rem' }}>
+                For private Docker images, you'll need to provide:
+              </p>
+              <ul style={{ fontSize: '0.875rem', color: '#92400e', marginLeft: '1.5rem', listStyle: 'disc' }}>
+                <li style={{ marginBottom: '0.5rem' }}><strong>Username:</strong> Your Docker Hub username</li>
+                <li style={{ marginBottom: '0.5rem' }}><strong>Password/Token:</strong> Your Docker Hub password or access token</li>
+              </ul>
+              <p style={{ fontSize: '0.75rem', color: '#92400e', marginTop: '0.75rem', padding: '0.5rem', background: '#fde68a', borderRadius: '0.25rem' }}>
+                🔒 <strong>Security Note:</strong> Credentials are used only during pull and never stored permanently.
+              </p>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1rem' }}>
+              Step-by-Step Guide
+            </h3>
+            <ol style={{ marginLeft: '1.5rem', color: '#6b7280' }}>
+              <li style={{ marginBottom: '0.75rem' }}>Go to "Deploy Application" page</li>
+              <li style={{ marginBottom: '0.75rem' }}>Select "Docker Image" option</li>
+              <li style={{ marginBottom: '0.75rem' }}>Enter the Docker image name (e.g., nginx:latest)</li>
+              <li style={{ marginBottom: '0.75rem' }}>Specify the port number</li>
+              <li style={{ marginBottom: '0.75rem' }}>Optionally provide a container name</li>
+              <li style={{ marginBottom: '0.75rem' }}>For private images, enter username and password</li>
+              <li>Click "Deploy Application"</li>
+            </ol>
+          </div>
+        </div>
+      )}
+
+      {/* GitHub Tab */}
+      {activeTab === 'github' && (
+        <div>
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1rem' }}>
+              GitHub Repository Deployment
+            </h3>
+
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#dbeafe', borderRadius: '0.5rem', borderLeft: '4px solid #3b82f6' }}>
+              <h4 style={{ fontWeight: '600', color: '#1e40af', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FileText size={20} />
+                1. Dockerfile Must Be in Repository Root
+              </h4>
+              <p style={{ fontSize: '0.875rem', color: '#1e3a8a', marginBottom: '0.75rem' }}>
+                Your repository MUST contain a file named <code style={{ background: '#bfdbfe', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>Dockerfile</code> in the root directory.
+              </p>
+              <div style={{ background: '#f3f4f6', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.875rem', fontFamily: 'monospace' }}>
+                {`your-repository/
+├── Dockerfile          ← Required (root level)
+├── src/
+│   ├── index.js
+│   └── routes/
+├── package.json
+└── README.md`}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f3e8ff', borderRadius: '0.5rem', borderLeft: '4px solid #8b5cf6' }}>
+              <h4 style={{ fontWeight: '600', color: '#6b21a8', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Code size={20} />
+                2. EXPOSE Statement Required
+              </h4>
+              <p style={{ fontSize: '0.875rem', color: '#581c87', marginBottom: '0.75rem' }}>
+                Dockerfile must include EXPOSE statement:
+              </p>
+              <div style={{ background: '#1e293b', color: '#e2e8f0', padding: '0.75rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontFamily: 'monospace' }}>
+                {`FROM node:18-alpine
+WORKDIR /app
+COPY . .
+RUN npm install
+EXPOSE 3000          ← Required
+CMD ["npm", "start"]`}
+              </div>
+            </div>
+
+            <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '0.5rem', borderLeft: '4px solid #f59e0b' }}>
+              <h4 style={{ fontWeight: '600', color: '#92400e', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Info size={20} />
+                3. Application Must Listen on 0.0.0.0
+              </h4>
+              <p style={{ fontSize: '0.875rem', color: '#92400e', marginBottom: '0.75rem' }}>
+                Application code must bind to <code style={{ background: '#fde68a', padding: '0.125rem 0.375rem', borderRadius: '0.25rem' }}>0.0.0.0</code> (not localhost):
+              </p>
+              <div style={{ background: '#1e293b', color: '#e2e8f0', padding: '0.75rem', borderRadius: '0.375rem', fontSize: '0.875rem', fontFamily: 'monospace' }}>
+                {`// ✅ Correct
+app.listen(3000, '0.0.0.0');
+
+// ❌ Wrong
+app.listen(3000, 'localhost');`}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Examples Tab */}
+      {activeTab === 'examples' && (
+        <div className="card">
+          <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1rem' }}>
+            Dockerfile Examples
+          </h3>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <h4 style={{ fontWeight: '600', color: '#3b82f6', marginBottom: '0.75rem' }}>Node.js Application</h4>
+            <pre style={{ background: '#1e293b', color: '#e2e8f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.875rem', overflow: 'auto' }}>
+{`FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install --production
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]`}
+            </pre>
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <h4 style={{ fontWeight: '600', color: '#3b82f6', marginBottom: '0.75rem' }}>Python Flask Application</h4>
+            <pre style={{ background: '#1e293b', color: '#e2e8f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.875rem', overflow: 'auto' }}>
+{`FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python", "app.py"]`}
+            </pre>
+          </div>
+
+          <div>
+            <h4 style={{ fontWeight: '600', color: '#3b82f6', marginBottom: '0.75rem' }}>React Application (Multi-stage)</h4>
+            <pre style={{ background: '#1e293b', color: '#e2e8f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.875rem', overflow: 'auto' }}>
+{`FROM node:18-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]`}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {/* Troubleshooting Tab */}
+      {activeTab === 'troubleshooting' && (
+        <div className="card">
+          <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#4c1d95', marginBottom: '1rem' }}>
+            Common Issues
+          </h3>
+
+          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#fee2e2', borderRadius: '0.5rem' }}>
+            <h4 style={{ fontWeight: '600', color: '#991b1b', marginBottom: '0.5rem' }}>❌ "Image not found"</h4>
+            <p style={{ fontSize: '0.875rem', color: '#991b1b', marginBottom: '0.5rem' }}>
+              <strong>Docker Hub:</strong> Check image name spelling and tag
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#991b1b' }}>
+              <strong>Solution:</strong> Verify image exists on Docker Hub or provide credentials for private images
+            </p>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#fee2e2', borderRadius: '0.5rem' }}>
+            <h4 style={{ fontWeight: '600', color: '#991b1b', marginBottom: '0.5rem' }}>❌ "No Dockerfile found"</h4>
+            <p style={{ fontSize: '0.875rem', color: '#991b1b', marginBottom: '0.5rem' }}>
+              <strong>GitHub:</strong> Dockerfile missing or in wrong location
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#991b1b' }}>
+              <strong>Solution:</strong> Create Dockerfile in repository root directory
+            </p>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#fee2e2', borderRadius: '0.5rem' }}>
+            <h4 style={{ fontWeight: '600', color: '#991b1b', marginBottom: '0.5rem' }}>❌ "Container runs but cannot access"</h4>
+            <p style={{ fontSize: '0.875rem', color: '#991b1b', marginBottom: '0.5rem' }}>
+              <strong>Cause:</strong> Application listening on localhost instead of 0.0.0.0
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#991b1b' }}>
+              <strong>Solution:</strong> Change app code to bind to 0.0.0.0
+            </p>
+          </div>
+
+          <div style={{ padding: '1rem', background: '#fee2e2', borderRadius: '0.5rem' }}>
+            <h4 style={{ fontWeight: '600', color: '#991b1b', marginBottom: '0.5rem' }}>❌ "Authentication failed"</h4>
+            <p style={{ fontSize: '0.875rem', color: '#991b1b', marginBottom: '0.5rem' }}>
+              <strong>Cause:</strong> Invalid Docker Hub or GitHub credentials
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#991b1b' }}>
+              <strong>Solution:</strong> Verify username and password/token are correct
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GitHubDeploymentDocs;
