@@ -1,6 +1,5 @@
 from database.connection import Base, engine, SessionLocal, get_db
 from models.user import User
-from models.load_test import LoadTest
 from models.cloud_pricing import CloudPricing
 from models.container_billing import ContainerBilling
 from models.resource_usage import ResourceUsage

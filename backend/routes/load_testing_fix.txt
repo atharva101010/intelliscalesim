@@ -1,0 +1,54 @@
+# Add this import at the top of routes/load_testing.py
+from routers.auth import get_current_user
+from database.models import UserResponse
+
+# Then modify the endpoints:
+
+# 1. Fix start_load_test to use actual user ID:
+@router.post("/api/load-test/start")
+async def start_load_test(
+    request: load_tester.LoadTestRequest,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Start a new load test and save to database"""
+    try:
+        # Start the load test
+        test_id = load_tester.start_load_test(request)
+        
+        # Save to database with ACTUAL user_id
+        db_test = LoadTest(
+            test_id=test_id,
+            user_id=current_user.id,  # ← CHANGED from hardcoded 1
+            target_url=request.target_url,
+            total_requests=request.total_requests,
+            concurrency=request.concurrency,
+            duration_seconds=request.duration_seconds,
+            method=request.method,
+            status='running',
+            progress=0.0
+        )
+        db.add(db_test)
+        db.commit()
+        db.refresh(db_test)
+        
+        return {"test_id": test_id, "message": "Load test started successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# 2. Fix get_all_load_tests to filter by user:
+@router.get("/api/load-test/history/all")
+async def get_all_load_tests(
+    current_user: UserResponse = Depends(get_current_user),  # ← ADD THIS
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 100
+):
+    """Get load tests for current user only"""
+    tests = db.query(LoadTest).filter(
+        LoadTest.user_id == current_user.id  # ← ADD THIS FILTER
+    ).order_by(LoadTest.created_at.desc()).offset(skip).limit(limit).all()
+    return tests
+

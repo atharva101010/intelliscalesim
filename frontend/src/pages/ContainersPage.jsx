@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Container, Play, Square, Trash2, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 
@@ -7,6 +8,7 @@ const API_BASE_URL = 'http://localhost:8000';
 export default function ContainersPage() {
   const [containers, setContainers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Helper function to extract accessible port from docker ports string
   const extractPort = (portsString) => {
@@ -230,7 +232,7 @@ export default function ContainersPage() {
           <h2 style={{fontSize: '32px', fontWeight: '900', color: '#111827', marginBottom: '15px'}}>No Containers Running</h2>
           <p style={{fontSize: '20px', color: '#6B7280', marginBottom: '30px'}}>Deploy your first application to get started!</p>
           <button
-            onClick={() => window.location.href = '#deploy'}
+            onClick={() => navigate('/student/deploy')}
             style={{padding: '20px 50px', background: 'linear-gradient(135deg, #7C3AED, #6366F1)', color: 'white', fontWeight: 'bold', fontSize: '20px', borderRadius: '15px', border: 'none', cursor: 'pointer', boxShadow: '0 10px 30px rgba(124, 58, 237, 0.4)', transition: 'transform 0.2s'}}
             onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
             onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}

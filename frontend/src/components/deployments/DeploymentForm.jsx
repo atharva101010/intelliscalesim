@@ -151,9 +151,9 @@ const DeploymentForm = () => {
               Deploy containerized applications directly from Docker Hub. Supports both public and private images.
             </p>
             
-            {/* Documentation Link */}
+            {/* Documentation Link - FIXED PATH */}
             <Link 
-              to="/documentation" 
+              to="/student/documentation" 
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -415,9 +415,9 @@ const DeploymentForm = () => {
               Build and deploy applications directly from your GitHub repository. Dockerfile required in the repo root.
             </p>
             
-            {/* Documentation Link */}
+            {/* Documentation Link - FIXED PATH */}
             <Link 
-              to="/documentation" 
+              to="/student/documentation?tab=github" 
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',

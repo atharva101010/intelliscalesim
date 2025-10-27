@@ -1,4 +1,15 @@
-from .database import Base, get_db, init_db
-from .simulation import Simulation, User
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, DateTime, JSON, Float
+from database import Base
 
-__all__ = ["Base", "get_db", "init_db", "Simulation", "User"]
+class LoadTest(Base):
+    __tablename__ = "load_tests"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    target_url = Column(String, nullable=False)
+    total_requests = Column(Integer, nullable=False)
+    concurrency = Column(Integer, nullable=False)
+    duration = Column(Integer, nullable=False)  # in seconds
+    status = Column(String, default="pending")  # pending, running, completed, failed
+    results = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

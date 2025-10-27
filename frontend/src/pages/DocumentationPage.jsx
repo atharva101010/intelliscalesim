@@ -4,7 +4,16 @@ import { BookOpen, Package, Github, CheckCircle, AlertTriangle, Terminal, Lightb
 
 const DocumentationPage = () => {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState('docker');
+  const searchParams = new URLSearchParams(location.search);
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || 'docker');
+
+  useEffect(() => {
+    if (tabParam && (tabParam === 'docker' || tabParam === 'github')) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const [copiedText, setCopiedText] = useState('');
 
   const copyToClipboard = (text, id) => {

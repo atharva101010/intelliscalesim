@@ -1,55 +1,42 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import DevOpsPage from './pages/DevOpsPage';
-import ManageSimulationsPage from './pages/ManageSimulationsPage';
-import ViewProgressPage from './pages/ViewProgressPage';
-import CreateAssignmentsPage from './pages/CreateAssignmentsPage';
-import Dashboard from './pages/Dashboard';
-import TrendsDashboard from './pages/TrendsDashboard';
-import BillingDashboard from './components/BillingDashboard';
-import RealTimeBilling from "./components/student/RealTimeBilling";
-import Deploy from './pages/Deploy';
-import ContainersPage from './pages/ContainersPage';
-import AutoScaling from './pages/AutoScaling';
-import DocumentationPage from './pages/DocumentationPage';
-import Analytics from './pages/Analytics';
-import LoadTesting from './pages/LoadTesting';
-import TeacherLayout from './components/TeacherLayout';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import StudentLayout from './components/StudentLayout';
+import Dashboard from './pages/Dashboard';
+import DeployPage from './pages/DeployPage';  // ✅ Import the actual file!
+import LoadTesting from './pages/LoadTesting';
+import ContainersPage from './pages/ContainersPage';
+import BillingSimulator from './pages/BillingSimulator';
+import DocumentationPage from './pages/DocumentationPage';
+import AutoScaling from './pages/AutoScaling';
+import Analytics from './pages/Analytics';
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        {/* Login Route */}
-        <Route path="/" element={<LoginPage />} />
+        {/* Public Routes */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         
-        {/* Teacher Routes - Nested under /dashboard */}
-        <Route path="/dashboard" element={<TeacherLayout />}>
-          <Route index element={<DevOpsPage />} />
-          <Route path="manage-simulations" element={<ManageSimulationsPage />} />
-          <Route path="view-progress" element={<ViewProgressPage />} />
-          <Route path="create-assignments" element={<CreateAssignmentsPage />} />
-        </Route>
-
-        {/* Student Routes - Nested under /student */}
+        {/* Student Routes with Layout */}
         <Route path="/student" element={<StudentLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="deploy" element={<Deploy />} />
+          <Route path="deploy" element={<DeployPage />} />
           <Route path="containers" element={<ContainersPage />} />
-          <Route path="billing" element={<BillingDashboard />} />
           <Route path="auto-scaling" element={<AutoScaling />} />
           <Route path="load-testing" element={<LoadTesting />} />
-            <Route path="trends" element={<TrendsDashboard />} />
+          <Route path="billing" element={<BillingSimulator />} />
           <Route path="documentation" element={<DocumentationPage />} />
           <Route path="analytics" element={<Analytics />} />
         </Route>
-
+        
         {/* Catch all - redirect to login */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 

@@ -1,54 +1,97 @@
-import React from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, Gauge, BookOpen, BarChart3, Zap, LogOut, TrendingUp, DollarSign, Activity } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Package, 
+  Box, 
+  Gauge, 
+  Zap, 
+  DollarSign, 
+  BookOpen, 
+  BarChart3,
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react';
 
 const StudentLayout = () => {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleLogout = () => {
-    localStorage.removeItem('userRole');
+    localStorage.removeItem('token');
     navigate('/');
   };
 
   const menuItems = [
-    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/student' },
-    { name: 'Deploy', icon: <Package size={20} />, path: '/student/deploy' },
-    { name: 'Containers', icon: <Package size={20} />, path: '/student/containers' },
-    { name: 'Auto-Scaling', icon: <Gauge size={20} />, path: '/student/auto-scaling' },
-    { name: 'Load Testing', icon: <Zap size={20} />, path: '/student/load-testing' },
-    { name: 'Trends', icon: <TrendingUp size={20} />, path: '/student/trends' },
-    { name: 'Billing', icon: <DollarSign size={20} />, path: '/student/billing' },
-    { name: 'Documentation', icon: <BookOpen size={20} />, path: '/student/documentation' },
-    { name: 'Analytics', icon: <BarChart3 size={20} />, path: '/student/analytics' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/student' },
+    { name: 'Deploy', icon: Package, path: '/student/deploy' },
+    { name: 'Containers', icon: Box, path: '/student/containers' },
+    { name: 'Auto-Scaling', icon: Gauge, path: '/student/auto-scaling' },
+    { name: 'Load Testing', icon: Zap, path: '/student/load-testing' },
+    { name: 'Billing', icon: DollarSign, path: '/student/billing' },
+    { name: 'Documentation', icon: BookOpen, path: '/student/documentation' },
+    { name: 'Analytics', icon: BarChart3, path: '/student/analytics' },
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <div style={{ width: '260px', background: 'linear-gradient(180deg, #3b82f6 0%, #1e40af 100%)', padding: '20px', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100vh' }}>
-        <div style={{ padding: '20px', marginBottom: '30px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
-          <h2 style={{ color: 'white', fontSize: '20px', fontWeight: 'bold', margin: 0 }}>IntelliScaleSim</h2>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '12px', marginTop: '4px' }}>Student Portal</p>
+    <div className="flex h-screen bg-gray-50">
+      <aside className={`${isSidebarOpen ? 'w-64' : 'w-20'} bg-gradient-to-b from-blue-600 to-blue-700 text-white transition-all duration-300 flex flex-col`}>
+        <div className="p-4 flex items-center justify-between">
+          {isSidebarOpen && (
+            <div>
+              <h1 className="text-xl font-bold">IntelliScaleSim</h1>
+              <p className="text-xs text-blue-200">Student Portal</p>
+            </div>
+          )}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 hover:bg-blue-500 rounded-lg transition"
+          >
+            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
-        <nav style={{ flex: 1 }}>
-          {menuItems.map((item, index) => {
+
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
-              <div key={index} onClick={() => navigate(item.path)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', margin: '6px 0', borderRadius: '8px', cursor: 'pointer', background: isActive ? 'rgba(255,255,255,0.2)' : 'transparent', transition: 'all 0.2s' }}>
-                {item.icon}
-                <span>{item.name}</span>
-              </div>
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all ${
+                  isActive
+                    ? 'bg-blue-500 shadow-lg'
+                    : 'hover:bg-blue-500/50'
+                } ${!isSidebarOpen && 'justify-center'}`}
+                title={!isSidebarOpen ? item.name : ''}
+              >
+                <Icon size={20} />
+                {isSidebarOpen && <span>{item.name}</span>}
+              </Link>
             );
           })}
         </nav>
-        <div onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', borderRadius: '8px', cursor: 'pointer', background: 'rgba(239, 68, 68, 0.2)', transition: 'all 0.2s' }}>
-          <LogOut size={20} />
-          <span>Logout</span>
+
+        <div className="p-4 border-t border-blue-500">
+          <button
+            onClick={handleLogout}
+            className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg hover:bg-red-500 transition-all ${
+              !isSidebarOpen && 'justify-center'
+            }`}
+            title={!isSidebarOpen ? 'Logout' : ''}
+          >
+            <LogOut size={20} />
+            {isSidebarOpen && <span>Logout</span>}
+          </button>
         </div>
-      </div>
-      <div style={{ marginLeft: '260px', flex: 1, background: '#f3f4f6' }}>
+      </aside>
+
+      <main className="flex-1 overflow-auto">
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 };
