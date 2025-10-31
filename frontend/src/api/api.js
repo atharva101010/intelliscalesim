@@ -10,7 +10,7 @@ const api = axios.create({
 });
 
 // Deployment APIs
-export const deployDockerImage = (data) => api.post('/deploy/docker-image', data);
+export const deployDockerImage = (data) => api.post('/api/deployment/docker', data);
 export const deployGitHub = (data) => api.post('/deploy/github', data);
 
 // Container Management APIs

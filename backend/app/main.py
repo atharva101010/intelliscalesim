@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import subprocess
 import socket
@@ -19,6 +20,15 @@ app = FastAPI(
     description="Lightweight self-hosted platform for simulating cloud environments with autoscaling",
     version="0.3.0"
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 
 # Port range for dynamic allocation
 SAFE_LOW_PORT = 20000
@@ -167,6 +177,7 @@ def root():
             "health": "/health",
             "deploy": "/deploy",
             "deploy_git": "/deploy_git",
+            "deploy_docker": "/api/deployment/docker",
             "containers": "/containers",
             "container_stats": "/containers/{container_id}/stats",
             "container_logs": "/containers/{container_id}/logs",
